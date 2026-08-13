@@ -45,6 +45,7 @@ const SingleSeat = ({
         <div className={`absolute group ${className}`}>
             <button
                 type="button"
+                disabled={!isClickable}
                 onClick={() => {
                     if (!isClickable) return;
                     onSelect(id, type)

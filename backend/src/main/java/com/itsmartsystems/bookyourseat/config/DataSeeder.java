@@ -2,6 +2,7 @@ package com.itsmartsystems.bookyourseat.config;
 
 import com.itsmartsystems.bookyourseat.model.Seat;
 import com.itsmartsystems.bookyourseat.model.Room;
+import com.itsmartsystems.bookyourseat.repository.ReservationRepository;
 import com.itsmartsystems.bookyourseat.repository.SeatRepository;
 import com.itsmartsystems.bookyourseat.repository.RoomRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -15,16 +16,20 @@ public class DataSeeder implements CommandLineRunner {
 
         private final RoomRepository roomRepository;
         private final SeatRepository locRepository;
+        private final ReservationRepository reservationRepository;
 
-        public DataSeeder(RoomRepository roomRepository, SeatRepository locRepository) {
+        public DataSeeder(RoomRepository roomRepository, SeatRepository locRepository,
+                        ReservationRepository reservationRepository) {
                 this.roomRepository = roomRepository;
                 this.locRepository = locRepository;
+                this.reservationRepository = reservationRepository;
         }
 
         @Override
         public void run(String... args) {
                 if (roomRepository.count() > 0) {
-                        System.out.println("Sălile există deja, seeder-ul nu rulează din nou.");
+                        ensureMissingSeats();
+                        System.out.println("Salile exista deja, au fost verificate locurile lipsa.");
                         return;
                 }
 
@@ -37,9 +42,9 @@ public class DataSeeder implements CommandLineRunner {
                 creeazaSalaCuLocuri("B0", "Room Birouri B0", "P", "OFFICE_AREA", false, 12,
                                 new SeatGroup("P-B0-", 1, 12));
 
-                creeazaSalaCuLocuri("E1", "Room Evenimente E1", "T1E1", "EVENT_ROOM", true, 28,
+                creeazaSalaCuLocuri("E1", "Room Evenimente E1", "T1E1", "EVENT_ROOM", true, 29,
                                 new SeatGroup("T1-SD1-", 1, 6),
-                                new SeatGroup("T1-E1-", 7, 28));
+                                new SeatGroup("T1-E1-", 7, 29));
 
                 creeazaSalaCuLocuri("S1", "Room Sedinte S1", "T1E1", "MEETING_ROOM", true, 8,
                                 new SeatGroup("T1-S1-", 1, 8));
@@ -63,6 +68,29 @@ public class DataSeeder implements CommandLineRunner {
                 System.out.println("Seeder terminat - săli și locuri populate cu succes!");
         }
 
+
+        private void ensureMissingSeats() {
+                roomRepository.findByCode("E1").ifPresent(room -> {
+                        String code = "T1-E1-29";
+                        String status = getRoomSeatStatus(room.getId());
+                        Seat seat = locRepository.findByCode(code)
+                                        .orElseGet(() -> new Seat(room.getId(), code, status));
+                        seat.setStatus(status);
+                        locRepository.save(seat);
+                });
+        }
+
+        private String getRoomSeatStatus(Long roomId) {
+                if (!reservationRepository.findByRoomIdAndStatus(roomId, "APPROVED").isEmpty()) {
+                        return "OCCUPIED";
+                }
+
+                if (!reservationRepository.findByRoomIdAndStatus(roomId, "PENDING").isEmpty()) {
+                        return "PENDING";
+                }
+
+                return "AVAILABLE";
+        }
         private void creeazaSalaCuLocuri(String cod, String name, String level, String tipSpatiu,
                         boolean inchiriereToataSala, int capacitate, SeatGroup... grupuri) {
 
@@ -91,3 +119,4 @@ public class DataSeeder implements CommandLineRunner {
                 }
         }
 }
+

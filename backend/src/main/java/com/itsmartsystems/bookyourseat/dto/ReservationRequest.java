@@ -1,63 +1,54 @@
 package com.itsmartsystems.bookyourseat.dto;
 
-import com.itsmartsystems.bookyourseat.model.Reservation;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class ReservationRequest {
-
-    @NotNull(message = "Booking type is required")
-    private Reservation.TipRezervare bookingType;
-
-    @NotNull(message = "Start time is required")
-    private LocalDateTime startTime;
-
-    @NotNull(message = "End time is required")
-    private LocalDateTime endTime;
-
-    @NotBlank(message = "Space is required")
-    private String spaceId;
-
-    private String seatId;
-    private LocalDate dataSfarsitRecurenta;
+    private String roomCode;
+    private String seatCode;
+    private LocalDateTime start;
+    private LocalDateTime end;
+    private Integer recurrence;
 
     public ReservationRequest() {
     }
 
-    public ReservationRequest(Reservation.TipRezervare bookingType, LocalDateTime startTime, LocalDateTime endTime,
-            String spaceId, String seatId, LocalDate dataSfarsitRecurenta) {
-        this.bookingType = bookingType;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.spaceId = spaceId;
-        this.seatId = seatId;
-        this.dataSfarsitRecurenta = dataSfarsitRecurenta;
+    public String getRoomCode() {
+        return roomCode;
     }
 
-    public Reservation.TipRezervare getBookingType() {
-        return bookingType;
+    public void setRoomCode(String roomCode) {
+        this.roomCode = roomCode;
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
+    public String getSeatCode() {
+        return seatCode;
     }
 
-    public LocalDateTime getEndTime() {
-        return endTime;
+    public void setSeatCode(String seatCode) {
+        this.seatCode = seatCode;
     }
 
-    public String getSpaceId() {
-        return spaceId;
+    public LocalDateTime getStart() {
+        return start;
     }
 
-    public String getSeatId() {
-        return seatId;
+    public void setStart(LocalDateTime start) {
+        this.start = start;
     }
 
-    public LocalDate getDataSfarsitRecurenta() {
-        return dataSfarsitRecurenta;
+    public LocalDateTime getEnd() {
+        return end;
+    }
+
+    public void setEnd(LocalDateTime end) {
+        this.end = end;
+    }
+
+    public Integer getRecurrence() {
+        return recurrence;
+    }
+
+    public void setRecurrence(Integer recurrence) {
+        this.recurrence = recurrence;
     }
 }

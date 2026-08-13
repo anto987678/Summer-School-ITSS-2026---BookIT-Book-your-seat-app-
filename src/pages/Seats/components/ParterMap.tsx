@@ -5,37 +5,38 @@ interface ParterMapProps {
     onRoomSelect?: (isRoom: boolean) => void;
     onSeatSelect?: (hasSelected: boolean) => void;
     onOccupiedSelect?: (isOccupied: boolean) => void;
-    getSeatStatus: (id: string) => 'available' | 'occupied' | 'unavailable' | 'in_review';
+    onSelectedSeatChange?: (seatCode: string) => void;
+    getSeatStatus: (id: string) => 'available' | 'occupied' | 'unavailable' | 'pending';
 }
 
-const ParterMap = ({ onRoomSelect, onSeatSelect, onOccupiedSelect, getSeatStatus }: ParterMapProps) => {
+const ParterMap = ({ onRoomSelect, onSeatSelect, onOccupiedSelect, onSelectedSeatChange, getSeatStatus }: ParterMapProps) => {
     const { handleSeatClick, getSelectedState } = useSeatSelection([
         { groupId: 'G-S0', matches: (id: string) => id.includes('P-S0') }
     ]);
-
     const handleSeatSelection = (id: string, type?: 'individual' | 'room') => {
-        const wasSelectedBeforeClick = getSelectedState(id) === 'selected';
-        const isOccupied = getSeatStatus(id) === 'occupied';
+        const wasSelectedBeforeClick = getSelectedState(id) !== null;
+        const status = getSeatStatus(id);
+        const isOccupied = status === 'occupied';
+
+        if (status !== 'available') {
+            onOccupiedSelect?.(isOccupied);
+            return;
+        }
 
         handleSeatClick(id);
 
-        if (onRoomSelect) {
-            onRoomSelect(type === 'room');
+        if (wasSelectedBeforeClick) {
+            onSelectedSeatChange?.('');
+            onRoomSelect?.(false);
+            onSeatSelect?.(false);
+            onOccupiedSelect?.(false);
+            return;
         }
 
-        if (onSeatSelect) {
-            onSeatSelect(!wasSelectedBeforeClick);
-        }
-
-        if (onOccupiedSelect) {
-            if (!wasSelectedBeforeClick) {
-
-                onOccupiedSelect(isOccupied);
-            } else {
-
-                onOccupiedSelect(false);
-            }
-        }
+        onSelectedSeatChange?.(id);
+        onRoomSelect?.(type === 'room');
+        onSeatSelect?.(true);
+        onOccupiedSelect?.(false);
     };
 
 
@@ -134,3 +135,6 @@ const ParterMap = ({ onRoomSelect, onSeatSelect, onOccupiedSelect, getSeatStatus
 };
 
 export default ParterMap;
+
+
+

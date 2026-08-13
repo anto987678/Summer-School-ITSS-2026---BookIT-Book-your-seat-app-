@@ -1,7 +1,7 @@
 interface SingleSeatProps {
     id: string;
     number: string | number;
-    status: 'available' | 'occupied' | 'unavailable' | 'in_review';
+    status: 'available' | 'occupied' | 'unavailable' | 'pending';
     type?: 'individual' | 'room';
     selectedSeat: string | null;
     onSelect: (id: string, type?: 'individual' | 'room') => void; 
@@ -23,7 +23,7 @@ const getSeatColor = (
             return 'bg-[#FECACA] text-[#1E1B4B] border border-[#F5A1A1]';
         case 'unavailable':
             return 'bg-[#C1BDD2] border border-[#7C7777] text-gray-500 cursor-not-allowed';
-        case 'in_review':
+        case 'pending':
             return 'bg-[#FDE68A] text-[#78350F] border border-[#F59E0B]';
         default:
             return 'bg-[#C1BDD2]';
@@ -63,5 +63,6 @@ const SingleSeat = ({
 };
 
 export default SingleSeat;
+
 
 

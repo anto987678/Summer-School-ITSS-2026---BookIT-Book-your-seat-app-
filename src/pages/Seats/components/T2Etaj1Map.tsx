@@ -1,14 +1,43 @@
 import { useSeatSelection } from '@/hooks/useSeatSelection';
 import SingleSeat from './SingleSeat'
 
-type SeatStatus = 'available' | 'occupied' | 'unavailable' | 'in_review';
+type SeatStatus = 'available' | 'occupied' | 'unavailable' | 'pending';
 
 interface SeatMapProps {
     getSeatStatus: (id: string) => SeatStatus;
+    onRoomSelect?: (isRoom: boolean) => void;
+    onSeatSelect?: (hasSelected: boolean) => void;
+    onOccupiedSelect?: (isOccupied: boolean) => void;
+    onSelectedSeatChange?: (seatCode: string) => void;
 }
 
-const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
+const T2Etaj1Map = ({ getSeatStatus, onRoomSelect, onSeatSelect, onOccupiedSelect, onSelectedSeatChange }: SeatMapProps) => {
     const { handleSeatClick, getSelectedState } = useSeatSelection([{ groupId: 'G-404', matches: (id: string) => id.includes('T2-404') }]);
+    const handleSeatSelection = (id: string, type?: 'individual' | 'room') => {
+        const wasSelectedBeforeClick = getSelectedState(id) !== null;
+        const status = getSeatStatus(id);
+        const isOccupied = status === 'occupied';
+
+        if (status !== 'available') {
+            onOccupiedSelect?.(isOccupied);
+            return;
+        }
+
+        handleSeatClick(id);
+
+        if (wasSelectedBeforeClick) {
+            onSelectedSeatChange?.('');
+            onRoomSelect?.(false);
+            onSeatSelect?.(false);
+            onOccupiedSelect?.(false);
+            return;
+        }
+
+        onSelectedSeatChange?.(id);
+        onRoomSelect?.(type === 'room');
+        onSeatSelect?.(true);
+        onOccupiedSelect?.(false);
+    };
 
   return (
     <div className="relative mx-auto h-[650px] w-full max-w-[1000px] border border-gray-800 bg-[#F5F3FF] overflow-hidden shadow-sm">
@@ -27,7 +56,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="1"
             status={getSeatStatus("T2-404-01")}
             selectedSeat={getSelectedState('T2-404-01')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[68px] top-[90px]"
           />
           <SingleSeat
@@ -36,7 +65,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="2"
             status={getSeatStatus("T2-404-02")}
             selectedSeat={getSelectedState('T2-404-02')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[10px] top-[130px]"
           />
           <SingleSeat
@@ -45,7 +74,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="3"
             status={getSeatStatus("T2-404-03")}
             selectedSeat={getSelectedState('T2-404-03')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[10px] top-[180px]"
           />
           <SingleSeat
@@ -54,7 +83,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="4"
             status={getSeatStatus("T2-404-04")}
             selectedSeat={getSelectedState('T2-404-04')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[10px] top-[230px]"
           />
           <SingleSeat
@@ -63,7 +92,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="5"
             status={getSeatStatus("T2-404-05")}
             selectedSeat={getSelectedState('T2-404-05')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[10px] top-[280px]"
           />
           <SingleSeat
@@ -72,7 +101,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="6"
             status={getSeatStatus("T2-404-06")}
             selectedSeat={getSelectedState('T2-404-06')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[68px] top-[320px]"
           />
           <SingleSeat
@@ -81,7 +110,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="7"
             status={getSeatStatus("T2-404-07")}
             selectedSeat={getSelectedState('T2-404-07')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[130px] top-[280px]"
           />
           <SingleSeat
@@ -90,7 +119,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="8"
             status={getSeatStatus("T2-404-08")}
             selectedSeat={getSelectedState('T2-404-08')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[130px] top-[230px]"
           />
           <SingleSeat
@@ -99,7 +128,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="9"
             status={getSeatStatus("T2-404-09")}
             selectedSeat={getSelectedState('T2-404-09')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[130px] top-[180px]"
           />
           <SingleSeat
@@ -108,7 +137,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
             number="10"
             status={getSeatStatus("T2-404-10")}
             selectedSeat={getSelectedState('T2-404-10')}
-            onSelect={handleSeatClick}
+            onSelect={handleSeatSelection}
             className="left-[130px] top-[130px]"
           />
         </div>
@@ -143,7 +172,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="9"
         status={getSeatStatus("T2-B1-09")}
         selectedSeat={getSelectedState("T2-B1-09")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[40px]"
         />
 
@@ -152,7 +181,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="10"
         status={getSeatStatus("T2-B1-10")}
         selectedSeat={getSelectedState("T2-B1-10")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[405px] top-[40px]"
         />
 
@@ -162,7 +191,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="7"
         status={getSeatStatus("T2-B1-07")}
         selectedSeat={getSelectedState("T2-B1-07")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[135px]"
         />
 
@@ -171,7 +200,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="8"
         status={getSeatStatus("T2-B1-08")}
         selectedSeat={getSelectedState("T2-B1-08")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[405px] top-[135px]"
         />
 
@@ -181,7 +210,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="5"
         status={getSeatStatus("T2-B1-05")}
         selectedSeat={getSelectedState("T2-B1-05")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[230px]"
         />
 
@@ -190,7 +219,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="6"
         status={getSeatStatus("T2-B1-06")}
         selectedSeat={getSelectedState("T2-B1-06")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[405px] top-[230px]"
         />
 
@@ -200,7 +229,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="4"
         status={getSeatStatus("T2-B1-04")}
         selectedSeat={getSelectedState("T2-B1-04")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[325px]"
         />
 
@@ -210,7 +239,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="3"
         status={getSeatStatus("T2-B1-03")}
         selectedSeat={getSelectedState("T2-B1-03")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[420px]"
         />
 
@@ -220,7 +249,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="1"
         status={getSeatStatus("T2-B1-01")}
         selectedSeat={getSelectedState("T2-B1-01")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[325px] top-[520px]"
         />
 
@@ -229,7 +258,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="2"
         status={getSeatStatus("T2-B1-02")}
         selectedSeat={getSelectedState("T2-B1-02")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[405px] top-[520px]"
         />   
 
@@ -239,7 +268,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="18"
         status={getSeatStatus("T2-B1-18")}
         selectedSeat={getSelectedState("T2-B1-18")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[40px]"
         />
 
@@ -249,7 +278,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="17"
         status={getSeatStatus("T2-B1-17")}
         selectedSeat={getSelectedState("T2-B1-17")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[135px]"
         />
 
@@ -259,7 +288,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="16"
         status={getSeatStatus("T2-B1-16")}
         selectedSeat={getSelectedState("T2-B1-16")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[230px]"
         />
 
@@ -269,7 +298,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="14"
         status={getSeatStatus("T2-B1-14")}
         selectedSeat={getSelectedState("T2-B1-14")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[325px]"
         />
 
@@ -278,7 +307,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="15"
         status={getSeatStatus("T2-B1-15")}
         selectedSeat={getSelectedState("T2-B1-15")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[805px] top-[325px]"
         />
 
@@ -288,7 +317,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="12"
         status={getSeatStatus("T2-B1-12")}
         selectedSeat={getSelectedState("T2-B1-12")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[420px]"
         />
 
@@ -297,7 +326,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="13"
         status={getSeatStatus("T2-B1-13")}
         selectedSeat={getSelectedState("T2-B1-13")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[805px] top-[420px]"
         />
 
@@ -307,7 +336,7 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
         number="11"
         status={getSeatStatus("T2-B1-11")}
         selectedSeat={getSelectedState("T2-B1-11")}
-        onSelect={handleSeatClick}
+        onSelect={handleSeatSelection}
         className="left-[725px] top-[520px]"
         />
     </div>
@@ -315,6 +344,12 @@ const T2Etaj1Map = ({ getSeatStatus }: SeatMapProps) => {
 }
 
 export default T2Etaj1Map
+
+
+
+
+
+
 
 
 

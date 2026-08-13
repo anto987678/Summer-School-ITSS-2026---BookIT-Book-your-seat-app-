@@ -45,7 +45,10 @@ const SingleSeat = ({
         <div className={`absolute group ${className}`}>
             <button
                 type="button"
-                onClick={() => onSelect(id, type)} // Aici trimitem si tipul in sus la harta
+                onClick={() => {
+                    if (!isClickable) return;
+                    onSelect(id, type)
+                }} // Aici trimitem si tipul in sus la harta
                 className={`flex h-[30px] w-[30px] items-center justify-center rounded text-xs font-bold transition-all ${getSeatColor(id, status, type, selectedSeat)} ${isClickable ? 'hover:scale-110 hover:shadow-md z-20' : ''}`}
             >
                 {number}

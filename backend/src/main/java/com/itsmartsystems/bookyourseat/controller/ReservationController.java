@@ -1,6 +1,7 @@
 package com.itsmartsystems.bookyourseat.controller;
 
 import com.itsmartsystems.bookyourseat.dto.ReservationRequest;
+import com.itsmartsystems.bookyourseat.dto.ReservationResponse;
 import com.itsmartsystems.bookyourseat.model.PostgresUser;
 import com.itsmartsystems.bookyourseat.model.Reservation;
 import com.itsmartsystems.bookyourseat.repository.PostgresUserRepository;
@@ -98,11 +99,14 @@ public class ReservationController {
     }
 
     @GetMapping("/active")
-    public List<Reservation> activeReservations(
+    public List<ReservationResponse> activeReservations(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end
     ) {
-        return reservationService.activeReservations(start, end);
+        return reservationService.activeReservations(start, end)
+                .stream()
+                .map(ReservationResponse::new)
+                .toList();
     }
 
     @GetMapping("/pending")

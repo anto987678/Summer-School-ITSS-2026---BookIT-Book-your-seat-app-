@@ -5,9 +5,18 @@ import com.itsmartsystems.bookyourseat.model.User;
 public class UserDetails {
 
     private String id;
+    private Integer postgresUserId;
     private String name;
     private String email;
     private User.Role role;
+
+    public UserDetails(String id, Integer postgresUserId, String name, String email, User.Role role) {
+        this.id = id;
+        this.postgresUserId = postgresUserId;
+        this.name = name;
+        this.email = email;
+        this.role = role;
+    }
 
     public UserDetails(String id, String name, String email, User.Role role) {
         this.id = id;
@@ -30,6 +39,14 @@ public class UserDetails {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Integer getPostgresUserId() {
+        return postgresUserId;
+    }
+
+    public void setPostgresUserId(Integer postgresUserId) {
+        this.postgresUserId = postgresUserId;
     }
 
     public User.Role getRole() {

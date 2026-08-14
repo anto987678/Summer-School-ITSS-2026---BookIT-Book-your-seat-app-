@@ -9,15 +9,15 @@ import java.util.List;
 @Repository
 public interface InvitationRepository extends JpaRepository<Invitation, Long> {
 
-    List<Invitation> findBySenderId_Id(Long senderId);
+    List<Invitation> findBySenderId_Id(Integer senderId);
 
-    List<Invitation> findByReceiverId_Id(Long receiverId);
+    List<Invitation> findByReceiverId_Id(Integer receiverId);
 
     List<Invitation> findBySeatId_Id(Long seatId);
 
     List<Invitation> findByStatus(String status);
 
-    List<Invitation> findByReceiverId_IdAndStatus(Long receiverId, String status);
+    List<Invitation> findByReceiverId_IdAndStatus(Integer receiverId, String status);
 
     boolean existsByCreatedReservationId_Id(Long reservationId);
 }

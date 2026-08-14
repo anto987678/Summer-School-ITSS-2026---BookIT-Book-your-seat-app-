@@ -22,13 +22,16 @@ public class InvitationService {
     private final PostgresUserRepository postgresUserRepository;
     private final SeatRepository seatRepository;
     private final ReservationRepository reservationRepository;
+    private final NotificationService notificationService;
 
     public InvitationService(InvitationRepository invitationRepository, PostgresUserRepository postgresUserRepository,
-            SeatRepository seatRepository, ReservationRepository reservationRepository) {
+            SeatRepository seatRepository, ReservationRepository reservationRepository,
+            NotificationService notificationService) {
         this.invitationRepository = invitationRepository;
         this.postgresUserRepository = postgresUserRepository;
         this.seatRepository = seatRepository;
         this.reservationRepository = reservationRepository;
+        this.notificationService = notificationService;
     }
 
     public Invitation createInvitation(InvitationRequest cerere) {
@@ -50,10 +53,13 @@ public class InvitationService {
         invitation.setStatus("PENDING");
         invitation.setCreatedAt(LocalDateTime.now());
 
-        return invitationRepository.save(invitation);
+        Invitation savedInvitation = invitationRepository.save(invitation);
+        notificationService.createInvitationNotification(savedInvitation);
+
+        return savedInvitation;
     }
 
-    public List<Invitation> getPendingInvitationsForUser(Long userId) {
+    public List<Invitation> getPendingInvitationsForUser(Integer userId) {
         return invitationRepository.findByReceiverId_IdAndStatus(userId, "PENDING");
     }
 
@@ -66,13 +72,29 @@ public class InvitationService {
             throw new RuntimeException("Invitatia a fost deja procesata.");
         }
 
+        Seat invitedSeat = invitation.getSeatId();
+        List<Reservation> overlappingReservations = reservationRepository
+                .findBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        invitedSeat.getId(),
+                        List.of("APPROVED", "PENDING"),
+                        invitation.getEndDateTime(),
+                        invitation.getStartDateTime()
+                );
+
+        if (!overlappingReservations.isEmpty()) {
+            throw new RuntimeException("Locul este deja rezervat in intervalul selectat.");
+        }
+
         Reservation reservation = new Reservation();
         reservation.setUser(invitation.getReceiverId());
-        reservation.setSeat(invitation.getSeatId());
+        reservation.setSeat(invitedSeat);
         reservation.setStartDateTime(invitation.getStartDateTime());
         reservation.setEndDateTime(invitation.getEndDateTime());
-        reservation.setStatus("CONFIRMED");
+        reservation.setStatus("APPROVED");
         reservation.setRecurrence(0);
+
+        invitedSeat.setStatus("OCCUPIED");
+        seatRepository.save(invitedSeat);
 
         Reservation savedReservation = reservationRepository.save(reservation);
 
@@ -81,16 +103,15 @@ public class InvitationService {
         invitation.setCreatedReservationId(savedReservation);
 
         invitationRepository.save(invitation);
+        notificationService.markInvitationNotificationAsRead(invitationId);
     }
 
+    @Transactional
     public void declineInvitation(Long invitationId) {
         Invitation invitation = invitationRepository.findById(invitationId)
                 .orElseThrow(() -> new RuntimeException("Invitatia nu exista."));
 
-        invitation.setStatus("DECLINED");
-        invitation.setRespondedAt(LocalDateTime.now());
-
-        invitationRepository.save(invitation);
+        notificationService.deleteInvitationNotification(invitationId);
+        invitationRepository.delete(invitation);
     }
 }
-

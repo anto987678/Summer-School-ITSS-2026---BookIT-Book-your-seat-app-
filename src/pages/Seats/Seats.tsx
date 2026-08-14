@@ -162,7 +162,7 @@ const Seats = () => {
   const normalizeSeatStatus = (status?: string): SeatStatus => {
     const normalizedStatus = status?.trim().toUpperCase().replace(/[\s-]+/g, "_");
 
-    if (normalizedStatus === "OCCUPIED") return "occupied";
+    if (["OCCUPIED", "APPROVED", "CONFIRMED", "ACCEPTED"].includes(normalizedStatus ?? "")) return "occupied";
     if (normalizedStatus === "UNAVAILABLE") return "unavailable";
     if (normalizedStatus === "PENDING" || normalizedStatus === "IN_REVIEW") return "pending";
 

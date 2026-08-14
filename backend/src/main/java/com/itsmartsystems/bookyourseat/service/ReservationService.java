@@ -44,8 +44,13 @@ public class ReservationService {
         Seat reservedSeat = isWholeRoomReservation ? null : seat;
 
         List<Reservation> reservations = reservedSeat == null
-                ? reservationRepository.findByRoomIdAndStatus(room.getId(), "APPROVED")
-                : reservationRepository.findBySeatIdAndStatus(reservedSeat.getId(), "APPROVED");
+                ? reservationRepository.findByRoom_IdAndStatus(room.getId(), "APPROVED")
+                : reservationRepository.findBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        reservedSeat.getId(),
+                        List.of("APPROVED", "PENDING"),
+                        end,
+                        start
+                );
 
         validateNoOverlap(reservations, null, start, end);
 
@@ -98,8 +103,13 @@ public class ReservationService {
         }
 
         List<Reservation> reservations = seat == null
-                ? reservationRepository.findByRoomIdAndStatus(room.getId(), "APPROVED")
-                : reservationRepository.findBySeatIdAndStatus(seat.getId(), "APPROVED");
+                ? reservationRepository.findByRoom_IdAndStatus(room.getId(), "APPROVED")
+                : reservationRepository.findBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        seat.getId(),
+                        List.of("APPROVED", "PENDING"),
+                        end,
+                        start
+                );
 
         validateNoOverlap(reservations, reservationId, start, end);
 
@@ -141,7 +151,7 @@ public class ReservationService {
     }
 
     public List<Reservation> historyReservation(Integer userId) {
-        return reservationRepository.findByUserId(Long.valueOf(userId));
+        return reservationRepository.findByUser_Id(userId);
     }
 
     public List<Reservation> approvedReservations() {

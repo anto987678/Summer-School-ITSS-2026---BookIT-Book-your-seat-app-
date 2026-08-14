@@ -1,14 +1,19 @@
 ﻿export type NotificationStatus = "pending" | "accepted" | "declined"
 
 export type Notification = {
-  id: number
-  message: string
-  date: string
-  startTime: string
-  endTime: string
-  status: NotificationStatus
-  isRead: boolean
-}
+  id: number;
+  invitationId?: number;
+  message: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: NotificationStatus;
+  isRead: boolean;
+  colleagueName?: string;
+  seatCode?: string;
+  roomName?: string;
+  floorName?: string;
+};
 
 type NotificationItemProps = {
   notification: Notification
@@ -32,6 +37,11 @@ export default function NotificationItem({
         <p className="mt-1 text-sm text-gray-600">
           {formattedDate}, {notification.startTime}-{notification.endTime}
         </p>
+        <p className="mt-1 text-sm text-gray-600">
+          Loc: {notification.seatCode ?? "-"}
+          {notification.roomName ? `, sala ${notification.roomName}` : ""}
+          {notification.floorName ? `, etaj ${notification.floorName}` : ""}
+        </p> 
       </div>
 
       {notification.status === "pending" && (

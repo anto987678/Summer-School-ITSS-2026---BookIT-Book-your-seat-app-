@@ -77,7 +77,7 @@ public class AuthService {
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
 
-        // salvare explicită în sesiune HTTP
+        // salvare explicitÄ Ă®n sesiune HTTP
         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
         HttpServletRequest httpRequest = attr.getRequest();
         HttpServletResponse httpResponse = attr.getResponse();
@@ -165,6 +165,9 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User doesnt exist !"));
 
-        return new UserDetails(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        PostgresUser postgresUser = postgresUserRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Userul nu exista in Postgres!"));
+
+        return new UserDetails(user.getId(), postgresUser.getId(), user.getName(), user.getEmail(), user.getRole());
     }
 }

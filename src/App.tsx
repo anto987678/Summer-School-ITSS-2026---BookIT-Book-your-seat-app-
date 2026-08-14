@@ -1,4 +1,5 @@
-﻿import { useState } from "react"
+﻿import { useEffect, useState } from "react"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { Routes, Route, useLocation } from "react-router-dom"
 import Topbar from "@/components/Topbar"
 import Sidebar from "@/components/Sidebar"
@@ -8,7 +9,7 @@ import Register from "@/pages/Register"
 import Home from "@/pages/Home"
 import Dashboard from "@/pages/Dashboard"
 import ChangePassword from "@/pages/ChangePassword"
-import Notifications, { initialNotifications } from "@/pages/Notifications"
+import Notifications from "@/pages/Notifications"
 import History from "@/pages/History"
 import UserDetails from "@/pages/UserDetails"
 import Seats from "@/pages/Seats"
@@ -21,7 +22,7 @@ import IstoricAngajati from "./pages/HR/IstoricAngajati"
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(initialNotifications.length)
+  const [notificationCount, setNotificationCount] = useState(0)
   const location = useLocation()
 
   const dashboardPages = [

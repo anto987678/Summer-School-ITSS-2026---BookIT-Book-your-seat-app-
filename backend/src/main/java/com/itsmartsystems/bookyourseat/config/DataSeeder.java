@@ -65,7 +65,7 @@ public class DataSeeder implements CommandLineRunner {
                                 new SeatGroup("T2-SD2-", 1, 4),
                                 new SeatGroup("T2-B2-", 5, 16));
 
-                System.out.println("Seeder terminat - săli și locuri populate cu succes!");
+                System.out.println("Seeder terminat - sÄli Č™i locuri populate cu succes!");
         }
 
 
@@ -81,11 +81,11 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         private String getRoomSeatStatus(Long roomId) {
-                if (!reservationRepository.findByRoomIdAndStatus(roomId, "APPROVED").isEmpty()) {
+                if (!reservationRepository.findByRoom_IdAndStatus(roomId, "APPROVED").isEmpty()) {
                         return "OCCUPIED";
                 }
 
-                if (!reservationRepository.findByRoomIdAndStatus(roomId, "PENDING").isEmpty()) {
+                if (!reservationRepository.findByRoom_IdAndStatus(roomId, "PENDING").isEmpty()) {
                         return "PENDING";
                 }
 

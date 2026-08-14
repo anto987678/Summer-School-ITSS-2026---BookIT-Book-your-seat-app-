@@ -4,6 +4,7 @@ export type UserRole = "CEO" | "MANAGER" | "PM" | "DEV" | "HR"
 
 export type CurrentUser = {
   id?: string
+  postgresUserId?: number
   name: string
   email: string
   role: UserRole

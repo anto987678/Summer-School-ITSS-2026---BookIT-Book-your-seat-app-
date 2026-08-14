@@ -1,60 +1,91 @@
 import BackButton from "@/components/BackButton";
+import ErrorPopUp from "@/components/ErrorPopUp";
 import AIAssistant from "@/pages/AIAssistant";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import NotificationItem, { type Notification } from "./components/NotificationItem";
 
-export const initialNotifications: Notification[] = [
-  {
-    id: 1,
-    message: "Andrei invited you to book a seat together.",
-    date: "2026-08-05",
-    startTime: "09:00",
-    endTime: "17:00",
-    status: "pending",
-    isRead: false,
-  },
-  {
-    id: 2,
-    message: "Your colleagues are coming to the office.",
-    date: "2026-10-09",
-    startTime: "09:00",
-    endTime: "17:00",
-    status: "pending",
-    isRead: false,
-  },
-  {
-    id: 3,
-    message: "Your colleagues are coming to the office.",
-    date: "2026-10-25",
-    startTime: "09:00",
-    endTime: "17:00",
-    status: "pending",
-    isRead: false,
-  },
-  {
-    id: 4,
-    message: "Your colleagues are coming to the office.",
-    date: "2026-10-25",
-    startTime: "09:00",
-    endTime: "17:00",
-    status: "pending",
-    isRead: false,
-  },
-]
+type NotificationApi = {
+  id: number;
+  message: string;
+  type: string;
+  read: boolean;
+  invitation?: {
+    id: number;
+    senderId: {
+      name: string;
+    };
+    seatId: {
+      code: string;
+      room?: {
+        name: string;
+        code: string;
+        floor_id?: {
+          name: string;
+        };
+      };
+    };
+    startDateTime: string;
+    endDateTime: string;
+    status: string;
+  };
+};
 
 type NotificationsProps = {
   onNotificationRemoved?: () => void;
 };
 
 const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
   const scheduledRemovalIds = useRef<Set<number>>(new Set());
+  const { user } = useCurrentUser();
 
-  const removeNotification = (
-    notificationId: number,
-    delay = 1000
-  ) => {
+  useEffect(() => {
+    if (!user.postgresUserId) return;
+
+    fetch(`http://localhost:8080/api/notifications/user/${user.postgresUserId}`, {
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Nu s-au putut incarca notificarile.");
+        }
+
+        return response.json();
+      })
+      .then((data: NotificationApi[]) => {
+        setNotifications(
+          data.map((notification) => {
+            const invitation = notification.invitation;
+
+            return {
+              id: notification.id,
+              invitationId: invitation?.id,
+              message:
+                notification.message ||
+                `${invitation?.senderId.name ?? "Un coleg"} te-a invitat la birou.`,
+              date: invitation?.startDateTime.slice(0, 10) ?? "",
+              startTime: invitation?.startDateTime.slice(11, 16) ?? "",
+              endTime: invitation?.endDateTime.slice(11, 16) ?? "",
+              status: "pending" as const,
+              isRead: notification.read,
+              colleagueName: invitation?.senderId.name,
+              seatCode: invitation?.seatId.code,
+              roomName: invitation?.seatId.room?.name,
+              floorName: invitation?.seatId.room?.floor_id?.name,
+            };
+          })
+        );
+      })
+      .catch(() => {
+        setNotifications([]);
+        setErrorMessage("Nu s-au putut incarca notificarile. Verifica daca backend-ul ruleaza.");
+      });
+  }, [user.postgresUserId]);
+
+  const removeNotification = (notificationId: number, delay = 1000) => {
     if (scheduledRemovalIds.current.has(notificationId)) {
       return;
     }
@@ -69,48 +100,88 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
       );
 
       onNotificationRemoved?.();
-    }, delay)
-  }
+    }, delay);
+  };
 
-  const handleAccept = (notification: Notification) => {
-    setNotifications((previousNotifications) =>
-      previousNotifications.map((item) =>
-        item.id === notification.id
-          ? {
-              ...item,
-              status: "accepted",
-              isRead: true,
-            }
-          : item,
-      ),
-    )
+  const handleAccept = async (notification: Notification) => {
+    if (!notification.invitationId) return;
 
-    removeNotification(notification.id)
-  }
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/invitations/${notification.invitationId}/accept`,
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
 
-  const handleDecline = (notificationId: number) => {
-    setNotifications((previousNotifications) =>
-      previousNotifications.map((item) =>
-        item.id === notificationId
-          ? {
-              ...item,
-              status: "declined",
-              isRead: true,
-            }
-          : item,
-      ),
-    )
+      if (!response.ok) {
+        throw new Error("Nu s-a putut accepta invitatia.");
+      }
 
-    removeNotification(notificationId)
-  }
+      setNotifications((previousNotifications) =>
+        previousNotifications.map((item) =>
+          item.id === notification.id
+            ? {
+                ...item,
+                status: "accepted",
+                isRead: true,
+              }
+            : item
+        )
+      );
+
+      removeNotification(notification.id);
+    } catch {
+      setErrorMessage("Nu s-a putut accepta invitatia. Verifica daca backend-ul ruleaza.");
+    }
+  };
+
+  const handleDecline = async (notificationId: number) => {
+    const notification = notifications.find((item) => item.id === notificationId);
+
+    if (!notification?.invitationId) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/invitations/${notification.invitationId}/decline`,
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Nu s-a putut refuza invitatia.");
+      }
+
+      setNotifications((previousNotifications) =>
+        previousNotifications.map((item) =>
+          item.id === notificationId
+            ? {
+                ...item,
+                status: "declined",
+                isRead: true,
+              }
+            : item
+        )
+      );
+
+      removeNotification(notificationId);
+    } catch {
+      setErrorMessage("Nu s-a putut refuza invitatia. Verifica daca backend-ul ruleaza.");
+    }
+  };
 
   const formatDate = (date: string) => {
+    if (!date) return "";
+
     return new Intl.DateTimeFormat("ro-RO", {
       day: "2-digit",
       month: "long",
       year: "numeric",
-    }).format(new Date(`${date}T00:00:00`))
-  }
+    }).format(new Date(`${date}T00:00:00`));
+  };
 
   return (
     <div className="min-h-full gap-10 p-4 sm:p-6">
@@ -133,10 +204,18 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
         ))}
       </div>
 
+      {errorMessage && (
+        <ErrorPopUp
+          title="Eroare"
+          message={errorMessage}
+          buttonText="Inchide"
+          onClose={() => setErrorMessage("")}
+        />
+      )}
+
       <AIAssistant />
     </div>
-  )
-}
+  );
+};
 
 export default Notifications;
-

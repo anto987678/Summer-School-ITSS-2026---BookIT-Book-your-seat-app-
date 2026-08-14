@@ -60,4 +60,11 @@ public class NotificationController {
         notificationService.deleteNotification(notificationId);
         return ResponseEntity.noContent().build();
     }
+
+
+    @DeleteMapping("/past")
+    public ResponseEntity<Void> deletePastInvitationNotifications() {
+        notificationService.deletePastInvitationNotifications();
+        return ResponseEntity.noContent().build();
+    }
 }

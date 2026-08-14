@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
 @Service
 public class NotificationService {
 
@@ -74,5 +78,10 @@ public class NotificationService {
     public void deleteInvitationNotification(Long invitationId) {
         notificationRepository.findByInvitation_Id(invitationId)
                 .ifPresent(notificationRepository::delete);
+    }
+
+    @Transactional
+    public void deletePastInvitationNotifications() {
+        notificationRepository.deletePastInvitationNotifications(LocalDateTime.now());
     }
 }

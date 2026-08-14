@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { Routes, Route, useLocation } from "react-router-dom"
 import Topbar from "@/components/Topbar"
@@ -24,6 +24,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [notificationCount, setNotificationCount] = useState(0)
   const location = useLocation()
+  const { user } = useCurrentUser(location.pathname)
 
   const dashboardPages = [
     "/dashboard",
@@ -54,6 +55,61 @@ export default function App() {
   const showFeatureTopbar = showDashboardLayout || authPages.includes(location.pathname)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] =
     useState(false)
+  
+  useEffect(() => {
+    type NotificationCountApi = {
+      invitation?: {
+        startDateTime?: string
+      }
+    }
+
+    const isCurrentOrFutureNotification = (notification: NotificationCountApi) => {
+      const startDateTime = notification.invitation?.startDateTime
+
+      if (!startDateTime) {
+        return true
+      }
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const notificationDate = new Date(startDateTime)
+      notificationDate.setHours(0, 0, 0, 0)
+
+      return notificationDate >= today
+    }
+
+    if (!user.postgresUserId) {
+      setNotificationCount(0)
+      return
+    }
+
+    const loadNotificationCount = () => {
+      fetch(`http://localhost:8080/api/notifications/user/${user.postgresUserId}`, {
+        credentials: "include",
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Could not load notification count")
+          }
+
+          return response.json()
+        })
+        .then((notifications: NotificationCountApi[]) => {
+          setNotificationCount(notifications.filter(isCurrentOrFutureNotification).length)
+        })
+        .catch(() => {
+          setNotificationCount(0)
+        })
+    }
+
+    loadNotificationCount()
+    window.addEventListener("focus", loadNotificationCount)
+
+    return () => {
+      window.removeEventListener("focus", loadNotificationCount)
+    }
+  }, [user.postgresUserId])
   return (
     <div
       className={

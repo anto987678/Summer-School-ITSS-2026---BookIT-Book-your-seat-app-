@@ -36,6 +36,22 @@ type NotificationsProps = {
   onNotificationRemoved?: () => void;
 };
 
+const isCurrentOrFutureNotification = (notification: NotificationApi) => {
+  const startDateTime = notification.invitation?.startDateTime;
+
+  if (!startDateTime) {
+    return true;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const notificationDate = new Date(startDateTime);
+  notificationDate.setHours(0, 0, 0, 0);
+
+  return notificationDate >= today;
+};
+
 const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -57,7 +73,7 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
       })
       .then((data: NotificationApi[]) => {
         setNotifications(
-          data.map((notification) => {
+          data.filter(isCurrentOrFutureNotification).map((notification) => {
             const invitation = notification.invitation;
 
             return {

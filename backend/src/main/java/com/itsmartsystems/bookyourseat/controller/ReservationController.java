@@ -92,6 +92,12 @@ public class ReservationController {
         return reservationService.rejectReservation(id);
     }
 
+    @PutMapping("/cancel/{id}")
+    public Reservation cancelReservation(@PathVariable Long id) {
+        PostgresUser user = getCurrentUser();
+        return reservationService.cancelOwnReservation(id, user);
+    }
+
     @GetMapping("/history")
     public List<Reservation> historyReservation() {
         PostgresUser user = getCurrentUser();

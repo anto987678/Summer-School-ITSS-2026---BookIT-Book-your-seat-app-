@@ -150,6 +150,27 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
+    public Reservation cancelOwnReservation(Long reservationId, PostgresUser user) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation does not exist!"));
+
+        if (!reservation.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("You can only cancel your own reservations!");
+        }
+
+        if (reservation.getEndDateTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Past reservations cannot be cancelled!");
+        }
+
+        if (!("PENDING".equals(reservation.getStatus()) || "APPROVED".equals(reservation.getStatus()))) {
+            throw new IllegalArgumentException("Only pending or approved reservations can be cancelled!");
+        }
+
+        reservation.setStatus("REJECTED");
+        updateReservedSeatsStatus(reservation, "AVAILABLE");
+        return reservationRepository.save(reservation);
+    }
+
     public List<Reservation> historyReservation(Integer userId) {
         return reservationRepository.findByUser_Id(userId);
     }

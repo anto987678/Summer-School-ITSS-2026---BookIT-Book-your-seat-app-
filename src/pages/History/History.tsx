@@ -1,41 +1,128 @@
 import BackButton from "@/components/BackButton";
 import AIAssistant from "@/pages/AIAssistant";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BookingTabs from "./components/BookingTabs";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import SuccessPopUp from "@/components/SuccessPopUp";
+import ErrorPopUp from "@/components/ErrorPopUp";
 import type { Booking, BookingTab } from "./types";
 import { getBookingStatusClassName } from "@/lib/bookingStatus";
 
-const initialBookings: Booking[] = [
-  { id: 1, title: "Rezervare 1", date: "28 Iulie 2026", seat: "Rand 3, C7", room: "Sala A", time: "09:00 - 17:00", status: "In asteptare", tab: "Viitoare" },
-  { id: 2, title: "Rezervare 2", date: "30 Iulie 2026", seat: "Rand 1, C2", room: "Sala B", time: "10:00 - 18:00", status: "Confirmat", tab: "Viitoare" },
-  { id: 3, title: "Rezervare 3", date: "02 August 2026", seat: "Rand 2, C5", room: "Sala A", time: "09:00 - 17:00", status: "In asteptare", tab: "Viitoare" },
-  { id: 4, title: "Rezervare 4 (Finalizata)", date: "15 Iulie 2026", seat: "Rand 2, C1", room: "Sala B", time: "09:00 - 17:00", status: "Finalizat", tab: "Trecute" },
-  { id: 5, title: "Rezervare 5 (Anulata)", date: "20 Iulie 2026", seat: "Rand 4, C12", room: "Sala C", time: "10:00 - 14:00", status: "Anulat", tab: "Anulate" },
-];
+type ReservationApi = {
+  id: number;
+  status: string;
+  startDateTime: string;
+  endDateTime: string;
+  seat?: {
+    code: string;
+    room?: {
+      name: string;
+    };
+  } | null;
+  room?: {
+    name: string;
+  } | null;
+}
 
 const History = () => {
   const [activeTab, setActiveTab] = useState<BookingTab>("Viitoare");
 
-  // Am schimbat isModalOpen într-un state care știe exact ce pop-up să arate
-  const [popupState, setPopupState] = useState<'none' | 'confirm' | 'success'>('none');
+  // Am schimbat isModalOpen Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă‹â€ˇÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â®ntr-un state care Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľÄ‚â€žĂ„â€¦Ă„Ä…Ă‹â€ˇÄ‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬Ä…Ä‚â€šĂ‚Âtie exact ce pop-up sĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â arate
+  const [popupState, setPopupState] = useState<'none' | 'confirm' | 'success' | 'error'>('none');
 
   const [bookingToDelete, setBookingToDelete] = useState<number | null>(null);
-  const [bookings, setBookings] = useState(initialBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const getBookingStatus = (reservation: ReservationApi) => {
+    const now = new Date();
+    const endDate = new Date(reservation.endDateTime);
+    if (reservation.status === "REJECTED") {
+      return "Anulat";
+    }
+    
+
+    if (endDate < now) {
+      return "Finalizat";
+    }
+
+    if (reservation.status === "APPROVED") {
+      return "Confirmat";
+    }
+
+    return "In asteptare";    
+  };
+
+  const getBookingTab = (reservation: ReservationApi): BookingTab => {
+    const now = new Date();
+    const endDate = new Date(reservation.endDateTime);
+
+    if (reservation.status === "REJECTED") {
+      return "Anulate";
+    }
+
+    if (endDate < now) {
+      return "Trecute";
+    }
+
+    return "Viitoare";
+  };
+
+  const formatDate = (date: string) => {
+    return new Intl.DateTimeFormat("ro-RO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(date));
+  };
+
+  const formatTime = (start: string, end: string) => {
+    return `${start.slice(11, 16)} - ${end.slice(11, 16)}`;
+  };
+
 
   const handleDeleteClick = (id: number) => {
     setBookingToDelete(id);
     setPopupState('confirm');
   };
 
-  const confirmDelete = () => {
-    setBookings((currentBookings) =>
-      currentBookings.filter((booking) => booking.id !== bookingToDelete)
-    );
+  const confirmDelete = async () => {
+    if (!bookingToDelete) return;
 
-    setPopupState('success');
-    setBookingToDelete(null);
+    try {
+      const response = await fetch(
+        `http://localhost:8080/reservations/cancel/${bookingToDelete}`,
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Nu s-a putut anula rezervarea.");
+      }
+
+      setBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === bookingToDelete
+            ? {
+                ...booking,
+                status: "Anulat",
+                tab: "Anulate",
+              }
+            : booking
+        )
+      );
+
+      setPopupState("success");
+      setBookingToDelete(null);
+    } catch {
+      setErrorMessage(
+        "Nu s-a putut anula rezervarea. Verifica daca backend-ul ruleaza."
+      );
+      setPopupState("error");
+      setBookingToDelete(null);
+    }
   };
 
   const cancelDelete = () => {
@@ -44,6 +131,40 @@ const History = () => {
   };
 
   const displayedBookings = bookings.filter((booking) => booking.tab === activeTab);
+
+  useEffect(() => {
+    fetch("http://localhost:8080/reservations/history", {
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Nu s-au putut incarca rezervarile.");
+        }
+
+        return response.json();
+      })
+      .then((reservations: ReservationApi[]) => {
+        setBookings(
+          reservations.map((reservation, index) => ({
+            id: reservation.id,
+            title: `Rezervare ${index + 1}`,
+            date: formatDate(reservation.startDateTime),
+            seat: reservation.seat?.code ?? "-",
+            room: reservation.seat?.room?.name ?? reservation.room?.name ?? "-",
+            time: formatTime(reservation.startDateTime, reservation.endDateTime),
+            status: getBookingStatus(reservation),
+            tab: getBookingTab(reservation),
+          }))
+        );
+      })
+      .catch(() => {
+        setBookings([]);
+        setErrorMessage(
+          "Nu s-au putut incarca rezervarile. Verifica daca backend-ul ruleaza."
+        );
+        setPopupState("error");
+      });
+  }, []);
 
   return (
     <div className="relative flex min-h-[calc(100vh-64px)] bg-white">
@@ -60,7 +181,8 @@ const History = () => {
               </p>
             ) : (
               displayedBookings.map((booking) => {
-                const canEdit = booking.tab === "Viitoare" && booking.status === "In asteptare";
+                const canCancel = booking.tab === "Viitoare" && booking.status === "In asteptare";
+                const canModify = booking.tab === "Viitoare" && booking.status === "In asteptare";
 
                 return (
                   <div key={booking.id}>
@@ -86,19 +208,19 @@ const History = () => {
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
-                          onClick={canEdit ? () => handleDeleteClick(booking.id) : undefined}
+                          onClick={canCancel ? () => handleDeleteClick(booking.id) : undefined}
                           className={
-                            canEdit
+                            canCancel
                               ? "rounded-full border border-[#F87171] bg-[#FEE2E2] px-6 py-2 text-sm font-bold text-red-400 transition hover:bg-red-50"
                               : "rounded-full border border-[#6B7280] px-6 py-2 text-sm font-bold text-[#6B7280] transition"
                           }
                         >
-                          Sterge
+                          Anuleaza
                         </button>
                         <button
                           type="button"
                           className={
-                            canEdit
+                            canModify
                               ? "rounded-full border border-[#6D28D9] px-6 py-2 text-sm font-bold text-[#6D28D9] transition hover:bg-purple-50"
                               : "rounded-full border border-[#6B7280] px-6 py-2 text-sm font-bold text-[#6B7280] transition"
                           }
@@ -130,7 +252,19 @@ const History = () => {
           title="Rezervare stearsa"
           sideMessage="Rezervarea ta a fost stearsa"
           highlightedText="CU SUCCES"
-          onClose={() => setPopupState('none')} // La OK, închidem tot
+          onClose={() => setPopupState('none')} 
+        />
+      )}
+
+      {popupState === "error" && (
+        <ErrorPopUp
+          title="Eroare"
+          message={errorMessage}
+          buttonText="Inchide"
+          onClose={() => {
+            setPopupState("none");
+            setErrorMessage("");
+          }}
         />
       )}
 

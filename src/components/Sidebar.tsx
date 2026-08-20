@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SidebarNavItem from "@/components/SidebarNavItem";
 import SidebarHrItem from "@/components/SidebarHrItem";
@@ -15,7 +15,7 @@ const navItems = [
 ];
 
 
-type UserRole = "CEO" | "MANAGER" | "PM" | "DEV";
+type UserRole = "CEO" | "MANAGER" | "PM" | "DEV" | "HR";
 
 type CurrentUser = {
   id?: string;
@@ -50,7 +50,7 @@ const Sidebar = ( {isMobileOpen, onMobileClose}: SidebarProps ) => {
       }
 
       const data = JSON.parse(mockUser) as CurrentUser;
-      setIsHr(data.role === "CEO" || data.role === "MANAGER");
+      setIsHr(data.role === "CEO" || data.role === "MANAGER" || data.role === "HR");
       return;
     }
 
@@ -65,7 +65,7 @@ const Sidebar = ( {isMobileOpen, onMobileClose}: SidebarProps ) => {
         return response.json();
       })
       .then((data: CurrentUser) => {
-        setIsHr(data.role === "CEO" || data.role === "MANAGER");
+        setIsHr(data.role === "CEO" || data.role === "MANAGER" || data.role === "HR");
       })
       .catch(() => {
         setIsHr(false);

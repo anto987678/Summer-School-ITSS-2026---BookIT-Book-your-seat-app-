@@ -50,8 +50,13 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
   const [popupState, setPopupState] = useState<'none' | 'success-admin' | 'success-direct' | 'error-taken' | 'error-admin-fail' | 'error-unavailable' | 'error-no-selection' | 'error-no-room'>('none');
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('Te rugam sa incerci din nou mai tarziu.');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleConfirmSelection = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (!selectedSeatCode) {
       setPopupState('error-no-selection');
       return;
@@ -66,6 +71,8 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
       setPopupState('error-no-room');
       return;
     }
+
+    setIsSubmitting(true);
 
     const bookingType = location.state?.bookingType;
       const date = location.state?.date;
@@ -98,6 +105,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
       } catch {
         setErrorMessage('Backend-ul nu raspunde. Verifica daca serverul este pornit pe localhost:8080.');
         setPopupState('error-admin-fail');
+        setIsSubmitting(false);
         return;
       }
 
@@ -105,6 +113,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
         const backendMessage = await response.text();
         setErrorMessage(backendMessage || `Eroare backend: ${response.status}`);
         setPopupState('error-admin-fail');
+        setIsSubmitting(false);
         return;
       }
 
@@ -175,9 +184,10 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
             <button
               type="button"
               onClick={handleConfirmSelection}
-              className="w-full rounded-full bg-[#8B5CF6] px-5 py-3 font-semibold text-white transition-all hover:bg-[#7C3AED] hover:shadow-lg lg:w-auto lg:px-8 lg:order-1"
+              disabled={isSubmitting}
+              className={`w-full rounded-full px-5 py-3 font-semibold text-white transition-all lg:w-auto lg:px-8 lg:order-1 ${isSubmitting ? 'cursor-not-allowed bg-[#C4B5FD]' : 'bg-[#8B5CF6] hover:bg-[#7C3AED] hover:shadow-lg'}`}
             >
-              Confirm new selection
+              {isSubmitting ? 'Se confirma...' : 'Confirm new selection'}
             </button>
           </div>
         </div>
@@ -220,7 +230,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           title="Cererea a fost trimisa catre administrator. Se asteapta raspunsul..."
           sideMessage="Cererea a fost trimisa catre administrator"
           highlightedText="CU SUCCES"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); navigate('/dashboard'); }}
         />
       )}
 
@@ -229,7 +239,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           title="Rezervare efectuata cu succes. O puteti vizualiza in Rezervarile mele"
           sideMessage="Cererea a fost efectuata"
           highlightedText="CU SUCCES"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); navigate('/dashboard'); }}
         />
       )}
 
@@ -239,7 +249,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           message="Va rugam sa alegeti alt loc."
           sideMessage="Loc ocupat"
           buttonText="Inapoi la harta interactiva"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); }}
         />
       )}
 
@@ -249,7 +259,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           message={errorMessage}
           sideMessage="Eroare backend"
           buttonText="OK, am inteles"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); }}
         />
       )}
 
@@ -259,7 +269,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           message="Acest loc nu poate fi rezervat in acest moment."
           sideMessage="Loc indisponibil"
           buttonText="OK, am inteles"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); }}
         />
       )}
       {popupState === 'error-no-room' && (
@@ -268,7 +278,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           message="Codul locului selectat nu este mapat la o sala din backend."
           sideMessage="Sala lipsa"
           buttonText="Inapoi la harta interactiva"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); }}
         />
       )}      {popupState === 'error-no-selection' && (
         <ErrorPopUp
@@ -276,7 +286,7 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
           message="Te rugam sa alegi un loc de pe harta inainte de a da confirmare."
           sideMessage="Selectie lipsa"
           buttonText="Inapoi la harta interactiva"
-          onClose={() => setPopupState('none')}
+          onClose={() => { setPopupState('none'); setIsSubmitting(false); }}
         />
       )}
     </>

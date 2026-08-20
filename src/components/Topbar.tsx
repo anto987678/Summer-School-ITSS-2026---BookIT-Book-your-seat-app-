@@ -1,4 +1,4 @@
-﻿import { useState } from "react"
+import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeft, Bell, ChevronRight, Menu, Search, X } from "lucide-react"
 import TextField from "@mui/material/TextField"
@@ -22,9 +22,9 @@ const pages = [
   { label: "Invite", path: "/invite" },
   { label: "Seats", path: "/seats" },
   { label: "Book Now", path: "/book-now" },
-  { label: "HR Reports", path: "/hr-reports" },
-  { label: "Preferinte", path: "/preferences" },
-  { label: "Istoric angajati", path: "/istoric" },
+  { label: "HR Reports", path: "/hr-reports", hrOnly: true },
+  { label: "Preferinte", path: "/preferences", hrOnly: true },
+  { label: "Istoric angajati", path: "/istoric", hrOnly: true },
 ]
 
 const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
@@ -37,9 +37,11 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
   const displayName = isCurrentUserLoading ? "Se incarca..." : currentUser.name
   const displayEmail = isCurrentUserLoading ? "" : currentUser.email || "Email indisponibil"
   const userInitial = displayName.trim().charAt(0).toUpperCase() || "U"
+  const canUseHrFlow = ["CEO", "MANAGER", "HR"].includes(currentUser.role)
+  const visiblePages = pages.filter((page) => !page.hrOnly || canUseHrFlow)
 
   const suggestions = searchValue.trim()
-    ? pages.filter((page) =>
+    ? visiblePages.filter((page) =>
         page.label.toLowerCase().includes(searchValue.trim().toLowerCase())
       )
     : []

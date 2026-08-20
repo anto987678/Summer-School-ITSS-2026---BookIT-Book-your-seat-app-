@@ -1,7 +1,7 @@
 package com.itsmartsystems.bookyourseat.dto;
 
 
-import com.itsmartsystems.bookyourseat.model.User;
+import com.itsmartsystems.bookyourseat.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -16,10 +16,10 @@ public class RegisterRequest {
 
     @NotBlank(message = "Password must not be empty !")
     private String password;
-    private User.Role role;
+    private Role role;
 
 
-    public RegisterRequest(String email, String name , String password, User.Role role){
+    public RegisterRequest(String email, String name , String password, Role role){
 
         this.email = email;
         this.name = name;
@@ -35,7 +35,7 @@ public class RegisterRequest {
         return email;
     }
 
-    public User.Role getRole() {
+    public Role getRole() {
         return role;
     }
 

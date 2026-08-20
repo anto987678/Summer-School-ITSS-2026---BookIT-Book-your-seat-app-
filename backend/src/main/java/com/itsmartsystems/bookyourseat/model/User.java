@@ -1,5 +1,6 @@
 package com.itsmartsystems.bookyourseat.model;
 
+import com.itsmartsystems.bookyourseat.Role;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -8,13 +9,6 @@ import java.time.LocalDateTime;
 
 @Document(collection = "users")
 public class User {
-
-    public enum Role{
-            CEO,
-            MANAGER,
-            PM,
-            DEV,
-    }
 
     @Id
     private String id;

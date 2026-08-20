@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 type BackButtonProps = {
@@ -23,9 +24,9 @@ const BackButton = ({ fallbackTo = "/", className = "" }: BackButtonProps) => {
       onClick={handleBack}
       aria-label="Inapoi"
       title="Inapoi"
-      className={`flex h-10 w-10 items-center justify-center rounded-full text-2xl text-[#29255E] transition hover:bg-gray-200 ${className}`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-[#29255E] transition hover:bg-gray-200 ${className}`}
     >
-      &larr;
+      <ArrowLeft className="h-6 w-6" aria-hidden="true" />
     </button>
   )
 }

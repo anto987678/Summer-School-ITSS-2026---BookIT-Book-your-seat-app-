@@ -19,7 +19,7 @@ const Login = ({ setIsLoggedIn }: LoginProps) => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { formData, handleChange } = useFormData(
+  const { formData, setFormData, handleChange } = useFormData(
     {
       email: "",
       password: "",
@@ -78,6 +78,7 @@ const Login = ({ setIsLoggedIn }: LoginProps) => {
         }
 
         setError(message || "Emailul sau parola introduse nu sunt corecte.")
+        setFormData({ email: "", password: "" })
         return
       }
 
@@ -85,6 +86,7 @@ const Login = ({ setIsLoggedIn }: LoginProps) => {
       navigate("/dashboard")
     } catch {
       setError("Nu am putut contacta serverul. Incearca din nou.")
+      setFormData({ email: "", password: "" })
     } finally {
       setLoading(false)
     }

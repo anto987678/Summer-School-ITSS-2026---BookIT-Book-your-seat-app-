@@ -23,7 +23,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/register", "/login" , "/change-password" , "/forgot-password" ,"/reset-password" , "/traffic-routes" , "/weather-test" , "/recommendation" , "/route-url").permitAll()
-                        .requestMatchers("/hr/**").hasAnyAuthority("CEO", "MANAGER")
+                        .requestMatchers("/hr/**").hasAnyAuthority("CEO", "MANAGER", "HR")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

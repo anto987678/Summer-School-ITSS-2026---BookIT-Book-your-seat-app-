@@ -2,15 +2,32 @@ import AIAssistant from "@/pages/AIAssistant";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useState, useEffect } from 'react';
 import { getBookingStatusClassName } from '@/lib/bookingStatus';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 type BookingStats = { confirmed: number; pending: number; canceled: number };
 type BookingHistoryItem = { id: number; date: string; seat: string; room: string; status: string };
 type BookingPreferences = { preferredRoom: string; preferredSeat: string; preferredTime: string };
+type PasswordRule = { label: string; isValid: boolean };
 type BookingSummaryResponse = {
   bookingStats: BookingStats;
   bookingHistory: Array<Omit<BookingHistoryItem, 'date'> & { date: string }>;
 };
 
+const specialCharacterRegex = /[!@#$%&*]/g;
+
+const PasswordRules = ({ rules }: { rules: PasswordRule[] }) => (
+  <div className="space-y-1 rounded-xl bg-white px-3 py-2 text-xs shadow-sm">
+    {rules.map((rule) => (
+      <div
+        key={rule.label}
+        className={`flex items-center gap-2 font-semibold ${rule.isValid ? 'text-green-600' : 'text-red-500'}`}
+      >
+        {rule.isValid ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+        <span>{rule.label}</span>
+      </div>
+    ))}
+  </div>
+);
 const API_URL = 'http://localhost:8080';
 
 const formatBookingDate = (date: string) => new Intl.DateTimeFormat('ro-RO', {
@@ -120,6 +137,15 @@ const UserDetails = () => {
     preferredSeat: bookingPreferences.preferredSeat,
     preferredTime: bookingPreferences.preferredTime
   };
+
+  const specialCharactersCount = newPassword.match(specialCharacterRegex)?.length ?? 0;
+  const passwordsMatch = newPassword !== "" && newPassword === confirmPassword;
+  const passwordRules: PasswordRule[] = [
+    { label: 'Minim 10 caractere', isValid: newPassword.length >= 10 },
+    { label: 'Cel putin 2 caractere speciale (!@#$%&*)', isValid: specialCharactersCount >= 2 },
+    { label: 'Parolele coincid', isValid: passwordsMatch },
+  ];
+  const isPasswordValid = passwordRules.every((rule) => rule.isValid);
 
   // --- HANDLERS (LOGICA DE SALVARE) ---
   const handleSaveProfile = async () => {
@@ -358,6 +384,8 @@ const UserDetails = () => {
                       )}
                     </button>
                   </div>
+
+                  <PasswordRules rules={passwordRules} />
 
                   {/* Mesaje de eroare sau succes */}
                   {errors.password && <span className="text-xs font-semibold text-red-500 pl-2">{errors.password}</span>}

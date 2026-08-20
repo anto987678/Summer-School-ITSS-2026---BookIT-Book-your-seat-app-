@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom"
+import { Link } from "react-router-dom"
 import AIAssistant from "@/pages/AIAssistant"
 import CityOverviewCard from "./components/CityOverviewCard"
 import OfficeActivityCard from "./components/OfficeActivityCard"
@@ -6,7 +6,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 const Dashboard = () => {
   const { user: currentUser, isLoading } = useCurrentUser()
-  const isHr = currentUser.role === "CEO" || currentUser.role === "MANAGER"
+  const isHr = currentUser.role === "CEO" || currentUser.role === "MANAGER" || currentUser.role === "HR"
   const displayName = isLoading ? "Se incarca..." : currentUser.name
 
   return (

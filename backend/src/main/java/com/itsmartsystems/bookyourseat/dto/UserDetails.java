@@ -1,6 +1,6 @@
 package com.itsmartsystems.bookyourseat.dto;
 
-import com.itsmartsystems.bookyourseat.model.User;
+import com.itsmartsystems.bookyourseat.Role;
 
 public class UserDetails {
 
@@ -8,12 +8,12 @@ public class UserDetails {
     private Integer postgresUserId;
     private String name;
     private String email;
-    private User.Role role;
+    private Role role;
     private String phoneNumber;
     private Integer departmentId;
     private String departmentName;
 
-    public UserDetails(String id, Integer postgresUserId, String name, String email, User.Role role) {
+    public UserDetails(String id, Integer postgresUserId, String name, String email, Role role) {
         this.id = id;
         this.postgresUserId = postgresUserId;
         this.name = name;
@@ -21,14 +21,14 @@ public class UserDetails {
         this.role = role;
     }
 
-    public UserDetails(String id, String name, String email, User.Role role) {
+    public UserDetails(String id, String name, String email, Role role) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
     }
 
-    public UserDetails(String name, String email, User.Role role) {
+    public UserDetails(String name, String email, Role role) {
         this.name = name;
         this.email = email;
         this.role = role;
@@ -52,11 +52,11 @@ public class UserDetails {
         this.postgresUserId = postgresUserId;
     }
 
-    public User.Role getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(User.Role role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 

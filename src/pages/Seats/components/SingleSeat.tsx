@@ -1,3 +1,5 @@
+import { useSeatReservation } from './SeatReservationContext';
+
 interface SingleSeatProps {
     id: string;
     number: string | number;
@@ -40,6 +42,7 @@ const SingleSeat = ({
     className = '',
 }: SingleSeatProps) => {
     const isClickable = status === 'available';
+    const reservationUser = useSeatReservation()?.getReservationUser(id);
 
     return (
         <div className={`absolute group ${className}`}>
@@ -56,7 +59,8 @@ const SingleSeat = ({
             </button>
 
             <div className="pointer-events-none absolute -top-8 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded bg-[#29255E] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                ID: {id}
+                <div>ID: {id}</div>
+                {reservationUser && <div>Utilizator: {reservationUser}</div>}
             </div>
         </div>
     );

@@ -6,6 +6,7 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import SuccessPopUp from "@/components/SuccessPopUp";
 import ErrorPopUp from "@/components/ErrorPopUp";
 import type { Booking, BookingTab } from "./types";
+import { useNavigate } from "react-router-dom";
 import { getBookingStatusClassName } from "@/lib/bookingStatus";
 
 type ReservationApi = {
@@ -14,20 +15,27 @@ type ReservationApi = {
   startDateTime: string;
   endDateTime: string;
   seat?: {
+    id: number;
     code: string;
     room?: {
+      id: number;
+      code: string;
       name: string;
     };
   } | null;
   room?: {
+    id: number;
+    code: string;
     name: string;
   } | null;
-}
+};
+
 
 const History = () => {
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState<BookingTab>("Viitoare");
 
-  // Am schimbat isModalOpen Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă‹â€ˇÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â®ntr-un state care Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľÄ‚â€žĂ„â€¦Ă„Ä…Ă‹â€ˇÄ‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬Ä…Ä‚â€šĂ‚Âtie exact ce pop-up sĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â arate
   const [popupState, setPopupState] = useState<'none' | 'confirm' | 'success' | 'error'>('none');
 
   const [bookingToDelete, setBookingToDelete] = useState<number | null>(null);
@@ -84,6 +92,19 @@ const History = () => {
   const handleDeleteClick = (id: number) => {
     setBookingToDelete(id);
     setPopupState('confirm');
+  };
+
+  const handleModifyClick = (booking: Booking) => {
+    navigate("/select-date", {
+      state: {
+        editReservationId: booking.id,
+        date: booking.startDateTime.slice(0, 10),
+        startHour: Number(booking.startDateTime.slice(11, 13)),
+        endHour: Number(booking.endDateTime.slice(11, 13)),
+        roomCode: booking.roomCode,
+        seatCode: booking.seatCode,
+      },
+    });
   };
 
   const confirmDelete = async () => {
@@ -154,6 +175,10 @@ const History = () => {
             time: formatTime(reservation.startDateTime, reservation.endDateTime),
             status: getBookingStatus(reservation),
             tab: getBookingTab(reservation),
+            startDateTime: reservation.startDateTime,
+            endDateTime: reservation.endDateTime,
+            seatCode: reservation.seat?.code,
+            roomCode: reservation.seat?.room?.code ?? reservation.room?.code,
           }))
         );
       })
@@ -219,6 +244,7 @@ const History = () => {
                         </button>
                         <button
                           type="button"
+                          onClick={canModify ? () => handleModifyClick(booking) : undefined}
                           className={
                             canModify
                               ? "rounded-full border border-[#6D28D9] px-6 py-2 text-sm font-bold text-[#6D28D9] transition hover:bg-purple-50"

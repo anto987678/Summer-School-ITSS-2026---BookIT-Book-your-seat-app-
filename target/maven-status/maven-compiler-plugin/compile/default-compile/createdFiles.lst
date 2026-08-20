@@ -1,4 +1,5 @@
 com\itsmartsystems\bookyourseat\model\Rezervare$TipRezervare.class
+com\itsmartsystems\bookyourseat\config\EmailConfig.class
 com\itsmartsystems\bookyourseat\dto\EmailRequest.class
 com\itsmartsystems\bookyourseat\controller\RezervareController.class
 com\itsmartsystems\bookyourseat\dto\RoutesOption.class

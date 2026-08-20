@@ -1,7 +1,10 @@
 package com.itsmartsystems.bookyourseat.model;
 
+import com.itsmartsystems.bookyourseat.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,17 +39,21 @@ public class Reservation {
     @Column(name = "end_date_time", nullable = false)
     private LocalDateTime endDateTime;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 100)
-    private String status;
+    private Status status;
 
     @Column(name = "recurrence", nullable = false)
     private Integer recurrence;
+
+    @Column(name = "reminder_sent", nullable = false)
+    private boolean reminderSent = false;
 
     public Reservation() {
     }
 
     public Reservation(PostgresUser user, Seat seat, Room room, LocalDateTime startDateTime,
-            LocalDateTime endDateTime, String status, Integer recurrence) {
+            LocalDateTime endDateTime, Status status, Integer recurrence) {
         this.user = user;
         this.seat = seat;
         this.room = room;
@@ -104,11 +111,11 @@ public class Reservation {
         this.endDateTime = endDateTime;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -119,5 +126,11 @@ public class Reservation {
     public void setRecurrence(Integer recurrence) {
         this.recurrence = recurrence;
     }
-}
+    public boolean isReminderSent() {
+        return reminderSent;
+    }
 
+    public void setReminderSent(boolean reminderSent) {
+        this.reminderSent = reminderSent;
+    }
+}

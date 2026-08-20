@@ -85,7 +85,11 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
               date: invitation?.startDateTime.slice(0, 10) ?? "",
               startTime: invitation?.startDateTime.slice(11, 16) ?? "",
               endTime: invitation?.endDateTime.slice(11, 16) ?? "",
-              status: "pending" as const,
+              status: invitation?.status?.toLowerCase() === "accepted"
+                ? "accepted" as const
+                : invitation?.status?.toLowerCase() === "declined"
+                  ? "declined" as const
+                  : "pending" as const,
               isRead: notification.read,
               colleagueName: invitation?.senderId.name,
               seatCode: invitation?.seatId.code,

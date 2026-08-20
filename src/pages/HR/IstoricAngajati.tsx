@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Building2,
   CalendarDays,
@@ -8,34 +8,56 @@ import {
 } from "lucide-react"
 
 import BackButton from "@/components/BackButton"
-import { employeeAttendanceMock } from "@/data/employeeAttendanceMock"
 import AIAssistant from "../AIAssistant"
-
-const departments = [
-  "All departments",
-  ...Array.from(
-    new Set(
-      employeeAttendanceMock.map(
-        (employee) => employee.department,
-      ),
-    ),
-  ),
-]
 
 const IstoricAngajati = () => {
   const [searchValue, setSearchValue] = useState("")
+  const [employees, setEmployees] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [selectedDepartment, setSelectedDepartment] =
     useState("All departments")
 
   const [selectedDate, setSelectedDate] = useState("")
 
+  const departments = [
+    "All departments",
+    ...Array.from(
+      new Set(
+        employees
+          .map((employee) => employee.department)
+          .filter(Boolean)
+      ),
+    ),
+  ]
+
+  useEffect (() => {
+    fetch("http://localhost:8080/hr/attendance-history", {
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Nu s-au putut încărca datele angajaților.")
+        }
+        return response.json()
+      })
+      .then((data) => {
+        setEmployees(data)
+      })
+      .catch(() => {
+        setEmployees([])
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
+
   const filteredEmployees = useMemo(() => {
     const normalizedSearch = searchValue
       .trim()
       .toLowerCase()
 
-    return employeeAttendanceMock.filter((employee) => {
+    return employees.filter((employee) => {
       const matchesSearch = employee.name
         .toLowerCase()
         .includes(normalizedSearch)
@@ -58,6 +80,7 @@ const IstoricAngajati = () => {
     searchValue,
     selectedDepartment,
     selectedDate,
+    employees
   ])
 
   const hasActiveFilters =
@@ -69,6 +92,16 @@ const IstoricAngajati = () => {
     setSearchValue("")
     setSelectedDepartment("All departments")
     setSelectedDate("")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-full bg-[#F5F3FF] p-4 sm:p-6 lg:p-8">
+        <p className="text-center font-semibold text-[#29255E]">
+          Se încarcă istoricul angajaților...
+        </p>
+      </div>
+    )
   }
 
   return (

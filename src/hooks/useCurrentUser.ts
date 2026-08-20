@@ -10,6 +10,7 @@ export type CurrentUser = {
   role: UserRole
   phoneNumber?: string
   departmentId?: number
+  departmentName?: string
 }
 
 const fallbackUser: CurrentUser = {

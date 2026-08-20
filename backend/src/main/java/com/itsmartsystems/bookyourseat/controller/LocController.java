@@ -1,5 +1,6 @@
 package com.itsmartsystems.bookyourseat.controller;
 
+import com.itsmartsystems.bookyourseat.Status;
 import com.itsmartsystems.bookyourseat.model.Reservation;
 import com.itsmartsystems.bookyourseat.model.Seat;
 import com.itsmartsystems.bookyourseat.repository.ReservationRepository;
@@ -36,7 +37,7 @@ public class LocController {
     }
 
     private void syncOccupiedSeatsFromApprovedReservations() {
-        Set<Long> occupiedSeatIds = reservationRepository.findByStatus("APPROVED")
+        Set<Long> occupiedSeatIds = reservationRepository.findByStatus(Status.APPROVED)
                 .stream()
                 .map(Reservation::getSeat)
                 .filter(seat -> seat != null && seat.getId() != null)

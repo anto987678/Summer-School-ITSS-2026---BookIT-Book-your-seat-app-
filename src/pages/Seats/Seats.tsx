@@ -8,6 +8,7 @@ import T2Etaj1Map from './components/T2Etaj1Map';
 import T1Etaj2Map from './components/T1Etaj2Map';
 import AIAssistant from '@/pages/AIAssistant';
 import T2Etaj2Map from './components/T2Etaj2Map';
+import { SeatReservationContext } from './components/SeatReservationContext';
 
 type SeatStatus = 'available' | 'occupied' | 'unavailable' | 'pending';
 
@@ -69,6 +70,7 @@ const getRoomCodeFromSeatCode = (seatCode: string) => {
 type BackendReservation = {
   id: number;
   status: string;
+  userName?: string | null;
   seat?: BackendSeat | null;
   room?: BackendSeat["room"] | null;
 };
@@ -121,13 +123,14 @@ const Seats = () => {
   const endHour = location.state?.endHour;
   const startDateTime = bookingDate && startHour !== undefined ? `${bookingDate}T${String(startHour).padStart(2, "0")}:00:00` : "";
   const endDateTime = bookingDate && endHour !== undefined ? `${bookingDate}T${String(endHour).padStart(2, "0")}:00:00` : "";
+  const initialSeatCode = location.state?.editReservationId ? location.state?.seatCode ?? "" : "";
 
   const [isRoomSelected, setIsRoomSelected] = useState(false);
-  const [hasSelectedSeat, setHasSelectedSeat] = useState(false);
+  const [hasSelectedSeat, setHasSelectedSeat] = useState(Boolean(initialSeatCode));
   const [hasOccupiedSeat, setHasOccupiedSeat] = useState(false);
   const [seats, setSeats] = useState<BackendSeat[]>([]);
   const [activeReservations, setActiveReservations] = useState<BackendReservation[]>([]);
-  const [selectedSeatCode, setSelectedSeatCode] = useState("");
+  const [selectedSeatCode, setSelectedSeatCode] = useState(initialSeatCode);
   
   useEffect(() => {
     fetch("http://localhost:8080/locuri", { credentials: "include" })
@@ -236,6 +239,17 @@ const Seats = () => {
   const selectedSeat = seats.find((seat) => seat.code.trim() === selectedSeatCode.trim());
   const selectedRoomCode = selectedSeat?.room?.code ?? getRoomCodeFromSeatCode(selectedSeatCode);
 
+  const getReservationUser = (seatCode: string) => {
+    const seat = seats.find((currentSeat) => currentSeat.code.trim() === seatCode.trim());
+    const reservation = activeReservations.find((currentReservation) => {
+      const reservationSeatCode = currentReservation.seat?.code?.trim();
+      const reservationRoomId = currentReservation.room?.id;
+      return reservationSeatCode === seatCode.trim() || reservationRoomId === seat?.room?.id;
+    });
+
+    return reservation?.userName ?? undefined;
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F3FF]">
       <SeatsNavbar
@@ -248,20 +262,22 @@ const Seats = () => {
         selectedRoomCode={selectedRoomCode}
       />
 
-      {activeMap ? (
-        <ResponsiveMap
-          {...activeMap}
-          onRoomSelect={setIsRoomSelected}
-          onSeatSelect={setHasSelectedSeat}
-          onOccupiedSelect={setHasOccupiedSeat}
-          onSelectedSeatChange={handleSelectedSeatChange}
-          getSeatStatus={getSeatStatus}
-        />
-      ) : (
-        <div className="flex h-full items-center justify-center text-gray-400">
-          Harta pentru {activeTab} este in lucru...
-        </div>
-      )}
+      <SeatReservationContext.Provider value={{ getReservationUser }}>
+        {activeMap ? (
+          <ResponsiveMap
+            {...activeMap}
+            onRoomSelect={setIsRoomSelected}
+            onSeatSelect={setHasSelectedSeat}
+            onOccupiedSelect={setHasOccupiedSeat}
+            onSelectedSeatChange={handleSelectedSeatChange}
+            getSeatStatus={getSeatStatus}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-gray-400">
+            Harta pentru {activeTab} este in lucru...
+          </div>
+        )}
+      </SeatReservationContext.Provider>
 
       <AIAssistant />
     </div>

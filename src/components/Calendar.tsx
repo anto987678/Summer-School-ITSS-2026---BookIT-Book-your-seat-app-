@@ -40,6 +40,14 @@ export default function Calendar({ selected, onSelect, recurrenceDates = [] }: C
     ...Array.from({ length: totalDays }, (_, i) => i + 1),
   ];
 
+  const isWeekend = (day: number | null) => {
+    if (day === null) return false;
+    
+    const dayOfWeek = getDayDate(day).getDay();
+
+    return dayOfWeek === 0 || dayOfWeek === 6;
+  }
+
   const changeMonth = (offset: number) =>
     setDate(new Date(year, month + offset, 1));
 
@@ -70,13 +78,18 @@ export default function Calendar({ selected, onSelect, recurrenceDates = [] }: C
         {days.map((day, i) => {
           const selectedDay = isSelectedDay(day);
           const recurrenceDay = isRecurrenceDay(day);
+          const weekend = isWeekend(day);
 
           return (
             <div
               key={i}
-              onClick={() => day && onSelect(getDayDate(day))}
+              onClick={() => {
+                if (day && !weekend) {
+                  onSelect(getDayDate(day))
+                }
+              }}
               style={{
-                cursor: day ? "pointer" : "default",
+                cursor: day && !weekend ? "pointer" : "default",
                 borderRadius: "50%",
                 width: 30,
                 height: 30,
@@ -85,8 +98,12 @@ export default function Calendar({ selected, onSelect, recurrenceDates = [] }: C
                 alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
-                background: selectedDay ? "#6D28D9" : recurrenceDay ? "#C4B5FD" : "transparent",
-                color: selectedDay ? "#FFFFFF" : "#1E1B4B",
+                background: selectedDay
+                  ? "#6D28D9"
+                  : recurrenceDay
+                    ? "#C4B5FD"
+                    : "transparent",
+                color: weekend ? "#9CA3AF" : selectedDay ? "#FFFFFF" : "#1E1B4B",
                 fontWeight: 600,
               }}
             >

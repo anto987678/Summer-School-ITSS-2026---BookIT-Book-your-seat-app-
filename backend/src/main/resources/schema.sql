@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS reservation (
     end_date_time TIMESTAMP NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     recurrence INTEGER NOT NULL DEFAULT 0,
+    reminder_sent BOOLEAN NOT NULL DEFAULT FALSE,
 
     CONSTRAINT chk_reservation_dates
         CHECK (end_date_time > start_date_time),
@@ -195,3 +196,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
         FOREIGN KEY (reservation_id)
         REFERENCES reservation(id)
 );
+
+ALTER TABLE reservation ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN NOT NULL DEFAULT FALSE;
+

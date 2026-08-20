@@ -10,6 +10,7 @@ public class ReservationResponse {
 
     private Long id;
     private String status;
+    private String userName;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
     private SeatDetails seat;
@@ -17,7 +18,8 @@ public class ReservationResponse {
 
     public ReservationResponse(Reservation reservation) {
         this.id = reservation.getId();
-        this.status = reservation.getStatus();
+        this.status = reservation.getStatus() == null ? null : reservation.getStatus().name();
+        this.userName = reservation.getUser() == null ? null : reservation.getUser().getName();
         this.startDateTime = reservation.getStartDateTime();
         this.endDateTime = reservation.getEndDateTime();
         this.seat = reservation.getSeat() == null ? null : new SeatDetails(reservation.getSeat());
@@ -26,6 +28,7 @@ public class ReservationResponse {
 
     public Long getId() { return id; }
     public String getStatus() { return status; }
+    public String getUserName() { return userName; }
     public LocalDateTime getStartDateTime() { return startDateTime; }
     public LocalDateTime getEndDateTime() { return endDateTime; }
     public SeatDetails getSeat() { return seat; }

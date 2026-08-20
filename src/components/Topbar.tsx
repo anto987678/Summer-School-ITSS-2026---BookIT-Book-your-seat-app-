@@ -1,5 +1,5 @@
 ﻿import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeft, Bell, ChevronRight, Menu, Search, X } from "lucide-react"
 import TextField from "@mui/material/TextField"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
@@ -14,7 +14,21 @@ type TopbarProps = {
   onOpenMobileMenu: () => void
 }
 
+const pages = [
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Notifications", path: "/notifications" },
+  { label: "History", path: "/history" },
+  { label: "User Details", path: "/user-details" },
+  { label: "Invite", path: "/invite" },
+  { label: "Seats", path: "/seats" },
+  { label: "Book Now", path: "/book-now" },
+  { label: "HR Reports", path: "/hr-reports" },
+  { label: "Preferinte", path: "/preferences" },
+  { label: "Istoric angajati", path: "/istoric" },
+]
+
 const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
+  const navigate = useNavigate()
   const location = useLocation()
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [isMobileUserMenuOpen, setIsMobileUserMenuOpen] = useState(false)
@@ -23,6 +37,12 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
   const displayName = isCurrentUserLoading ? "Se incarca..." : currentUser.name
   const displayEmail = isCurrentUserLoading ? "" : currentUser.email || "Email indisponibil"
   const userInitial = displayName.trim().charAt(0).toUpperCase() || "U"
+
+  const suggestions = searchValue.trim()
+    ? pages.filter((page) =>
+        page.label.toLowerCase().includes(searchValue.trim().toLowerCase())
+      )
+    : []
 
   const authPages = [
     "/",
@@ -38,6 +58,8 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
     setIsMobileSearchOpen(false)
     setIsMobileUserMenuOpen(false)
   }
+
+
 
   return (
     <nav className="relative z-30 w-full border-b border-purple-100 bg-[#312E81] px-3 py-3 shadow-sm sm:px-6 md:py-4">
@@ -116,6 +138,23 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
                     },
                   }}
                 />
+                {suggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-xl border border-purple-200 bg-white shadow-lg">
+                    {suggestions.map((page) => (
+                      <button
+                        key={page.path}
+                        type="button"
+                        onClick={() => {
+                          navigate(page.path)
+                          setSearchValue("")
+                        }}
+                        className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-[#29255E] last:border-b-0 hover:bg-purple-50"
+                      >
+                        {page.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Link

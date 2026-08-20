@@ -72,12 +72,17 @@ const SeatsNavbar = ({ activeTab, setActiveTab, isRoomSelected, hasSelectedSeat,
       const startHour = location.state?.startHour;
       const endHour = location.state?.endHour;
       const recurrenceWeeks = location.state?.recurrenceWeeks;
+      const editReservationId = location.state?.editReservationId;
+      const reservationUrl = editReservationId
+        ? `http://localhost:8080/reservations/${editReservationId}`
+        : "http://localhost:8080/reservations";
+      const reservationMethod = editReservationId ? "PUT" : "POST";
 
       let response: Response;
 
       try {
-        response = await fetch("http://localhost:8080/reservations", {
-          method: "POST",
+        response = await fetch(reservationUrl, {
+          method: reservationMethod,
           credentials: "include",
           headers: {
             "Content-Type": "application/json",

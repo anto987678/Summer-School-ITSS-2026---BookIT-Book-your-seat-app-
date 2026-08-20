@@ -1,5 +1,7 @@
 package com.itsmartsystems.bookyourseat.config;
 
+import com.itsmartsystems.bookyourseat.Status;
+
 import com.itsmartsystems.bookyourseat.model.Seat;
 import com.itsmartsystems.bookyourseat.model.Room;
 import com.itsmartsystems.bookyourseat.repository.ReservationRepository;
@@ -81,11 +83,11 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         private String getRoomSeatStatus(Long roomId) {
-                if (!reservationRepository.findByRoom_IdAndStatus(roomId, "APPROVED").isEmpty()) {
+                if (!reservationRepository.findByRoom_IdAndStatus(roomId, Status.APPROVED).isEmpty()) {
                         return "OCCUPIED";
                 }
 
-                if (!reservationRepository.findByRoom_IdAndStatus(roomId, "PENDING").isEmpty()) {
+                if (!reservationRepository.findByRoom_IdAndStatus(roomId, Status.PENDING).isEmpty()) {
                         return "PENDING";
                 }
 

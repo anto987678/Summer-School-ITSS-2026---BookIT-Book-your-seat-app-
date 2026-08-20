@@ -1,9 +1,12 @@
 package com.itsmartsystems.bookyourseat.repository;
 
+import com.itsmartsystems.bookyourseat.Status;
+import com.itsmartsystems.bookyourseat.model.PostgresUser;
 import com.itsmartsystems.bookyourseat.model.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -14,28 +17,53 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByRoom_Id(Long roomId);
 
-    List<Reservation> findByStatus(String status);
+    List<Reservation> findByStatus(Status status);
 
-    List<Reservation> findByUser_IdAndStatus(Integer userId, String status);
+    List<Reservation> findByUser_IdAndStatus(Integer userId, Status status);
 
-    List<Reservation> findBySeat_IdAndStatus(Long seatId, String status);
+    List<Reservation> findBySeat_IdAndStatus(Long seatId, Status status);
 
-    List<Reservation> findByRoom_IdAndStatus(Long roomId, String status);
+    List<Reservation> findBySeat_IdAndStatusIn(Long seatId, Collection<Status> statuses);
+
+    List<Reservation> findByRoom_IdAndStatus(Long roomId, Status status);
+
+    List<Reservation> findByRoom_IdAndStatusIn(Long roomId, Collection<Status> statuses);
 
     List<Reservation> findByStartDateTimeBetween(LocalDateTime start, LocalDateTime end);
+    List<Reservation> findByStatusAndReminderSentFalseAndStartDateTimeBetween(
+            Status status,
+            LocalDateTime start,
+            LocalDateTime end);
+
 
     List<Reservation> findByEndDateTimeBetween(LocalDateTime start, LocalDateTime end);
 
     List<Reservation> findByStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-            List<String> statuses,
+            Collection<Status> statuses,
             LocalDateTime endDateTime,
             LocalDateTime startDateTime
     );
 
     List<Reservation> findBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
             Long seatId,
-            List<String> statuses,
+            Collection<Status> statuses,
             LocalDateTime endDateTime,
             LocalDateTime startDateTime
     );
+
+    List<Reservation> findByUserDepartmentIdAndStartDateTimeBetween(
+            Integer departmentId,
+            LocalDateTime startOfDay,
+            LocalDateTime endOfDay);
+
+    boolean existsByUserAndStartDateTimeBetween(
+            PostgresUser user,
+            LocalDateTime startOfDay,
+            LocalDateTime endOfDay);
+
+    boolean existsBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            Long seatId,
+            Collection<Status> statuses,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime);
 }

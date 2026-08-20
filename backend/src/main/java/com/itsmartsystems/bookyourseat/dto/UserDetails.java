@@ -9,6 +9,9 @@ public class UserDetails {
     private String name;
     private String email;
     private User.Role role;
+    private String phoneNumber;
+    private Integer departmentId;
+    private String departmentName;
 
     public UserDetails(String id, Integer postgresUserId, String name, String email, User.Role role) {
         this.id = id;
@@ -71,5 +74,28 @@ public class UserDetails {
 
     public void setName(String name) {
         this.name = name;
+    }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public Integer getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Integer departmentId) {
+        this.departmentId = departmentId;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 }

@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -41,13 +43,9 @@ public class InvitationController {
     }
 
     @GetMapping("/colleagues")
-    public ResponseEntity<List<ColleagueDto>> getColleagues() {
+    public ResponseEntity<List<ColleagueDto>> getColleagues(@RequestParam(required = false) LocalDate date) {
         PostgresUser currentUser = getCurrentUser();
-        List<ColleagueDto> colleagues = postgresUserRepository.findAll().stream()
-                .filter(user -> !user.getId().equals(currentUser.getId()))
-                .map(user -> new ColleagueDto(user.getId(), user.getName(), user.getEmail()))
-                .toList();
-        return ResponseEntity.ok(colleagues);
+        return ResponseEntity.ok(invitationService.getEligibleColleagues(currentUser, date));
     }
 
     @GetMapping("/pending")

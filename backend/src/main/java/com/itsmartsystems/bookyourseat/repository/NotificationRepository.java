@@ -16,6 +16,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUser_IdOrderByCreatedAtDesc(Integer userId);
 
+    @Query("""
+        select distinct n from Notification n
+        left join fetch n.user
+        left join fetch n.invitation invitation
+        left join fetch invitation.senderId
+        left join fetch invitation.receiverId
+        left join fetch invitation.seatId seat
+        left join fetch seat.room room
+        left join fetch room.floor
+        left join fetch n.reservation reservation
+        left join fetch reservation.user
+        left join fetch reservation.seat reservationSeat
+        left join fetch reservationSeat.room reservationSeatRoom
+        left join fetch reservationSeatRoom.floor
+        left join fetch reservation.room reservationRoom
+        left join fetch reservationRoom.floor
+        where n.user.id = :userId
+        order by n.createdAt desc
+    """)
+    List<Notification> findWithDetailsByUserIdOrderByCreatedAtDesc(@Param("userId") Integer userId);
+
     List<Notification> findByUser_IdAndIsReadFalse(Integer userId);
 
     @Query("""

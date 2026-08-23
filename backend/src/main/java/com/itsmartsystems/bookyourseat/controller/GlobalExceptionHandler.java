@@ -18,6 +18,13 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalState(IllegalStateException e)
+    {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<String> handleBadCredentials(BadCredentialsException e)
     {

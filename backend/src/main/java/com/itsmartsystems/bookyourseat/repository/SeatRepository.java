@@ -48,7 +48,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("""
         select s from Seat s
         where s.room.id = :roomId
-        and s.status <> 'UNAVAILABLE'
+        and upper(s.status) in ('AVAILABLE', 'ACTIVE')
         and s.id not in (
             select r.seat.id from Reservation r
             where r.seat is not null
@@ -56,6 +56,14 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
             and r.status in (com.itsmartsystems.bookyourseat.Status.APPROVED, com.itsmartsystems.bookyourseat.Status.ACCEPTED, com.itsmartsystems.bookyourseat.Status.PENDING)
             and r.startDateTime < :endDateTime
             and r.endDateTime > :startDateTime
+        )
+        and not exists (
+            select 1 from Reservation roomReservation
+            where roomReservation.room is not null
+            and roomReservation.room.id = :roomId
+            and roomReservation.status in (com.itsmartsystems.bookyourseat.Status.APPROVED, com.itsmartsystems.bookyourseat.Status.ACCEPTED, com.itsmartsystems.bookyourseat.Status.PENDING)
+            and roomReservation.startDateTime < :endDateTime
+            and roomReservation.endDateTime > :startDateTime
         )
     """)
     List<Seat> findAvailableSeatsInRoom(
@@ -67,7 +75,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("""
         select s from Seat s
         where s.room.id = :roomId
-        and s.status <> 'UNAVAILABLE'
+        and upper(s.status) in ('AVAILABLE', 'ACTIVE')
         and s.id not in (
             select r.seat.id from Reservation r
             where r.seat is not null
@@ -75,6 +83,14 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
             and r.status in (com.itsmartsystems.bookyourseat.Status.APPROVED, com.itsmartsystems.bookyourseat.Status.ACCEPTED, com.itsmartsystems.bookyourseat.Status.PENDING)
             and r.startDateTime < :endDateTime
             and r.endDateTime > :startDateTime
+        )
+        and not exists (
+            select 1 from Reservation roomReservation
+            where roomReservation.room is not null
+            and roomReservation.room.id = :roomId
+            and roomReservation.status in (com.itsmartsystems.bookyourseat.Status.APPROVED, com.itsmartsystems.bookyourseat.Status.ACCEPTED, com.itsmartsystems.bookyourseat.Status.PENDING)
+            and roomReservation.startDateTime < :endDateTime
+            and roomReservation.endDateTime > :startDateTime
         )
     """)
     List<Seat> findAndLockAvailableSeatsInRoom(

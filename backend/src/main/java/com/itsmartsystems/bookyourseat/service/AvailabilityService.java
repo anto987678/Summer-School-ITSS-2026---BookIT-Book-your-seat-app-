@@ -32,7 +32,7 @@ public class AvailabilityService {
         validateInterval(start, end);
         return roomRepository.findByFloorId(floorId).stream()
                 .filter(room -> seatRepository.findByRoomId(room.getId()).stream()
-                        .filter(seat -> "AVAILABLE".equalsIgnoreCase(seat.getStatus()))
+                        .filter(this::isSelectableSeat)
                         .anyMatch(seat -> isAvailable(seat, start, end)))
                 .map(AvailableRoomResponse::new)
                 .toList();
@@ -41,10 +41,15 @@ public class AvailabilityService {
     public List<AvailableSeatResponse> availableSeats(Long roomId, LocalDateTime start, LocalDateTime end) {
         validateInterval(start, end);
         return seatRepository.findByRoomId(roomId).stream()
-                .filter(seat -> "AVAILABLE".equalsIgnoreCase(seat.getStatus()))
+                .filter(this::isSelectableSeat)
                 .filter(seat -> isAvailable(seat, start, end))
                 .map(AvailableSeatResponse::new)
                 .toList();
+    }
+
+    private boolean isSelectableSeat(Seat seat) {
+        String status = seat.getStatus();
+        return "AVAILABLE".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status);
     }
 
     private boolean isAvailable(Seat seat, LocalDateTime start, LocalDateTime end) {

@@ -28,7 +28,7 @@ type Seat = {
   room?: Room;
   roomId?: number;
   salaId?: number;
-  room_id?: any; // Adaugat pentru siguranta
+  room_id?: any;
 };
 
 type User = {
@@ -37,21 +37,14 @@ type User = {
   email: string;
 };
 
-type Reservation = {
-  id: number;
-  seat?: Seat | null;
-  room?: Room | null;
-  startDateTime: string;
-  endDateTime: string;
-  status: string;
-};
+const WORKDAY_START = "08:00";
+const WORKDAY_END = "22:00";
 
-// Functii blindate de citire a ID-urilor
 const getRoomFloorId = (room: any) => {
   if (!room) return undefined;
   if (room.floor?.id !== undefined) return room.floor.id;
   if (room.floorId !== undefined) return room.floorId;
-  if (typeof room.floor_id === 'object' && room.floor_id !== null) return room.floor_id.id;
+  if (typeof room.floor_id === "object" && room.floor_id !== null) return room.floor_id.id;
   if (room.floor_id !== undefined) return room.floor_id;
   return undefined;
 };
@@ -61,36 +54,37 @@ const getSeatRoomId = (seat: any) => {
   if (seat.room?.id !== undefined) return seat.room.id;
   if (seat.roomId !== undefined) return seat.roomId;
   if (seat.salaId !== undefined) return seat.salaId;
-  if (typeof seat.room_id === 'object' && seat.room_id !== null) return seat.room_id.id;
+  if (typeof seat.room_id === "object" && seat.room_id !== null) return seat.room_id.id;
   if (seat.room_id !== undefined) return seat.room_id;
   return undefined;
 };
 
-// The seat status is structural; time-based occupancy comes from
-// /reservations/active for the selected interval.
-const isSelectableSeat = (status?: string) => {
-  const normalizedStatus = status?.trim().toUpperCase();
-  return normalizedStatus !== "UNAVAILABLE";
-};
-
 const isConferenceRoom = (type?: string) => {
   const normalizedType = type?.trim().toUpperCase() ?? "";
-  return normalizedType.includes("SEDINTE");
+  return normalizedType.includes("SEDINTE") || normalizedType.includes("MEETING");
 };
 
-const overlapsInterval = (reservation: Reservation, start: Date, end: Date) => {
-  const reservationStart = new Date(reservation.startDateTime);
-  const reservationEnd = new Date(reservation.endDateTime);
-  return start < reservationEnd && end > reservationStart;
+const isWeekend = (date: string) => {
+  if (date === "") return false;
+  const day = new Date(`${date}T00:00:00`).getDay();
+  return day === 0 || day === 6;
 };
+
+const isTimeOutOfRange = (time: string) => time !== "" && (time < WORKDAY_START || time > WORKDAY_END);
+
+const buildAvailabilityQuery = (formData: { date: string; startTime: string; endTime: string }) =>
+  new URLSearchParams({
+    start: `${formData.date}T${formData.startTime}:00`,
+    end: `${formData.date}T${formData.endTime}:00`,
+  });
 
 const InviteModal = () => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [seats, setSeats] = useState<Seat[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
   const [floors, setFloors] = useState<Floor[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -112,42 +106,33 @@ const InviteModal = () => {
       .then((data) => setRooms(Array.isArray(data) ? data : []))
       .catch(() => setRooms([]));
 
-    fetch("http://localhost:8080/locuri", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setSeats(Array.isArray(data) ? data : []))
-      .catch(() => setSeats([]));
-
     fetch("http://localhost:8080/floors", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setFloors(Array.isArray(data) ? data : []))
       .catch(() => setFloors([]));
-
-    fetch("http://localhost:8080/api/invitations/colleagues", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setUsers(Array.isArray(data) ? data : []))
-      .catch(() => setUsers([]));
-
   }, []);
 
-  // ---> SPIONUL PENTRU DEBUG (V2) <---
   useEffect(() => {
-    if (seats.length > 0 && rooms.length > 0) {
-      console.log("=== DIAGNOSTIC G2 & SD0 (V2) ===");
-      const g2 = rooms.find(r => r.code === "G2");
-      const sd0 = rooms.find(r => r.code === "SD0");
+    const query = formData.date === "" ? "" : `?date=${encodeURIComponent(formData.date)}`;
 
-      const g2Seats = seats.filter(s => String(getSeatRoomId(s)) === String(g2?.id));
-      const sd0Seats = seats.filter(s => String(getSeatRoomId(s)) === String(sd0?.id));
-
-      console.log("1. Statusurile scaunelor din G2:", g2Seats.map(s => s.status).join(", ") || "Fără scaune");
-      console.log("2. Statusurile scaunelor din SD0:", sd0Seats.map(s => s.status).join(", ") || "Fără scaune");
-      console.log("3. Număr rezervări active primite pt acest interval:", reservations.length);
-      console.log("===========================");
-    }
-  }, [seats, rooms, reservations]);
+    fetch(`http://localhost:8080/api/invitations/colleagues${query}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        const eligibleUsers = Array.isArray(data) ? data : [];
+        setUsers(eligibleUsers);
+        setFormData((previousData) =>
+          previousData.colleagueId !== "" &&
+          !eligibleUsers.some((user: User) => String(user.postgresUserId) === previousData.colleagueId)
+            ? { ...previousData, colleagueId: "" }
+            : previousData
+        );
+      })
+      .catch(() => setUsers([]));
+  }, [formData.date]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
+
     setFormData((previousData) => ({
       ...previousData,
       [name]: value,
@@ -160,42 +145,51 @@ const InviteModal = () => {
   };
 
   const isTimeInvalid = formData.startTime !== "" && formData.endTime !== "" && formData.endTime <= formData.startTime;
-  const hasValidDateTime = formData.date !== "" && formData.startTime !== "" && formData.endTime !== "" && !isTimeInvalid;
+  const isDateInvalid = isWeekend(formData.date);
+  const isStartTimeOutOfRange = isTimeOutOfRange(formData.startTime);
+  const isEndTimeOutOfRange = isTimeOutOfRange(formData.endTime);
+  const hasValidDateTime =
+    formData.date !== "" &&
+    formData.startTime !== "" &&
+    formData.endTime !== "" &&
+    !isDateInvalid &&
+    !isStartTimeOutOfRange &&
+    !isEndTimeOutOfRange &&
+    !isTimeInvalid;
 
   useEffect(() => {
-    if (!hasValidDateTime) {
-      setReservations([]);
+    if (!hasValidDateTime || formData.seatFloor === "") {
+      setAvailableRooms([]);
+      setAvailableSeats([]);
       setAvailabilityError("");
       setIsCheckingAvailability(false);
       return;
     }
 
     const abortController = new AbortController();
-    const query = new URLSearchParams({
-      start: `${formData.date}T${formData.startTime}:00`,
-      end: `${formData.date}T${formData.endTime}:00`,
-    });
+    const query = buildAvailabilityQuery(formData);
+    query.set("floorId", formData.seatFloor);
 
     setIsCheckingAvailability(true);
     setAvailabilityError("");
 
-    const loadActiveReservations = async () => {
+    const loadAvailableRooms = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/reservations/active?${query.toString()}`, {
+        const response = await fetch(`http://localhost:8080/api/availability/rooms?${query.toString()}`, {
           credentials: "include",
           signal: abortController.signal,
         });
 
         if (!response.ok) {
-          throw new Error("Failed to load active reservations");
+          throw new Error("Failed to load available rooms");
         }
 
-        const data = await response.json() as Reservation[];
-        setReservations(Array.isArray(data) ? data : []);
+        const data = await response.json() as Room[];
+        setAvailableRooms(Array.isArray(data) ? data.filter((room) => !isConferenceRoom(room.type)) : []);
       } catch (error) {
         if ((error as DOMException).name !== "AbortError") {
-          setReservations([]);
-          setAvailabilityError("Nu am putut verifica disponibilitatea. Încearcă din nou.");
+          setAvailableRooms([]);
+          setAvailabilityError("Nu am putut verifica salile disponibile. Incearca din nou.");
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -204,31 +198,51 @@ const InviteModal = () => {
       }
     };
 
-    void loadActiveReservations();
+    void loadAvailableRooms();
     return () => abortController.abort();
-  }, [formData.date, formData.startTime, formData.endTime, hasValidDateTime]);
+  }, [formData.date, formData.startTime, formData.endTime, formData.seatFloor, hasValidDateTime]);
 
-  const selectedStart = hasValidDateTime ? new Date(`${formData.date}T${formData.startTime}`) : null;
-  const selectedEnd = hasValidDateTime ? new Date(`${formData.date}T${formData.endTime}`) : null;
+  useEffect(() => {
+    if (!hasValidDateTime || formData.seatRoom === "") {
+      setAvailableSeats([]);
+      return;
+    }
 
-  const overlappingReservations = selectedStart && selectedEnd
-    ? reservations.filter((reservation) => overlapsInterval(reservation, selectedStart, selectedEnd))
-    : [];
+    const abortController = new AbortController();
+    const query = buildAvailabilityQuery(formData);
+    query.set("roomId", formData.seatRoom);
 
-  const isSeatReserved = (seat: Seat) => {
-    const seatRoomId = getSeatRoomId(seat);
-    return overlappingReservations.some((reservation) => {
-      if (reservation.seat?.id === seat.id || reservation.seat?.code === seat.code) return true;
-      return reservation.room?.id !== undefined && reservation.room.id === seatRoomId;
-    });
-  };
+    setIsCheckingAvailability(true);
+    setAvailabilityError("");
 
-  const availableSeatsForInterval = hasValidDateTime
-    ? seats.filter((seat) => isSelectableSeat(seat.status) && !isSeatReserved(seat))
-    : [];
+    const loadAvailableSeats = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/availability/seats?${query.toString()}`, {
+          credentials: "include",
+          signal: abortController.signal,
+        });
 
-  const selectedFloorId = formData.seatFloor;
-  const selectedRoomId = Number(formData.seatRoom);
+        if (!response.ok) {
+          throw new Error("Failed to load available seats");
+        }
+
+        const data = await response.json() as Seat[];
+        setAvailableSeats(Array.isArray(data) ? data : []);
+      } catch (error) {
+        if ((error as DOMException).name !== "AbortError") {
+          setAvailableSeats([]);
+          setAvailabilityError("Nu am putut verifica locurile disponibile. Incearca din nou.");
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsCheckingAvailability(false);
+        }
+      }
+    };
+
+    void loadAvailableSeats();
+    return () => abortController.abort();
+  }, [formData.date, formData.startTime, formData.endTime, formData.seatRoom, hasValidDateTime]);
 
   const officeRooms = rooms.filter((room) => !isConferenceRoom(room.type));
 
@@ -239,34 +253,36 @@ const InviteModal = () => {
     if (floorId === undefined || accumulator.some((currentFloor) => String(currentFloor.id) === String(floorId))) {
       return accumulator;
     }
+
     accumulator.push({ id: floorId, name: floor?.name ?? String(floorId) });
     return accumulator;
   }, []);
 
   const displayedFloors = floorsFromRooms.length > 0 ? floorsFromRooms : floors;
-
-  const officeRoomsWithAvailableSeats = officeRooms.filter((room) => {
-    const roomFloorId = getRoomFloorId(room);
-    const matchesFloor = formData.seatFloor === "" || String(roomFloorId) === String(selectedFloorId);
-    const hasAvailableSeat = availableSeatsForInterval.some((seat) => String(getSeatRoomId(seat)) === String(room.id));
-    return matchesFloor && hasAvailableSeat;
-  });
-
-  const seatsForSelectedRoom = availableSeatsForInterval.filter(
-    (seat) => String(getSeatRoomId(seat)) === String(selectedRoomId)
+  const selectedRoom = availableRooms.find((room) => String(room.id) === formData.seatRoom);
+  const selectedSeat = availableSeats.find((seat) => String(seat.id) === formData.seatId);
+  const seatsForSelectedRoom = availableSeats.filter(
+    (seat) => String(getSeatRoomId(seat)) === String(formData.seatRoom)
   );
 
   const isFormInvalid =
-    formData.colleagueId === "" || formData.date === "" || formData.startTime === "" ||
-    formData.endTime === "" || formData.seatFloor === "" || formData.seatRoom === "" ||
-    formData.seatId === "" || isTimeInvalid || isCheckingAvailability || availabilityError !== "";
+    formData.colleagueId === "" ||
+    formData.date === "" ||
+    formData.startTime === "" ||
+    formData.endTime === "" ||
+    formData.seatFloor === "" ||
+    formData.seatRoom === "" ||
+    formData.seatId === "" ||
+    isDateInvalid ||
+    isStartTimeOutOfRange ||
+    isEndTimeOutOfRange ||
+    isTimeInvalid ||
+    isCheckingAvailability ||
+    availabilityError !== "";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isFormInvalid || isSubmitting) return;
-
-    const selectedRoom = rooms.find((room) => String(room.id) === formData.seatRoom);
-    const selectedSeat = seats.find((seat) => String(seat.id) === formData.seatId);
     if (!selectedRoom || !selectedSeat) return;
 
     const selectedColleague = users.find((user) => String(user.postgresUserId) === formData.colleagueId);
@@ -292,7 +308,8 @@ const InviteModal = () => {
       });
 
       if (!response.ok) {
-        setSubmitError("Invitatia nu a fost trimisa. Verifica daca esti autentificata si daca locul este inca disponibil.");
+        const message = await response.text();
+        setSubmitError(message || "Invitatia nu a fost trimisa. Verifica daca esti autentificata si daca locul este inca disponibil.");
         return;
       }
       setIsSuccess(true);
@@ -312,9 +329,9 @@ const InviteModal = () => {
       {isSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B0A1A]/45 p-4">
           <section className="w-full max-w-md rounded-[32px] bg-white p-8 text-center shadow-2xl">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl font-bold text-green-600">✓</div>
-            <h2 className="mt-5 text-2xl font-bold text-[#29255E]">Invitația a fost trimisă cu succes!</h2>
-            <p className="mt-3 text-gray-600">Colegul tău va primi notificarea pentru rezervare.</p>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl font-bold text-green-600">OK</div>
+            <h2 className="mt-5 text-2xl font-bold text-[#29255E]">Invitatia a fost trimisa cu succes!</h2>
+            <p className="mt-3 text-gray-600">Colegul tau va primi notificarea pentru rezervare.</p>
             <button type="button" onClick={() => navigate("/dashboard")} className="mt-7 w-full rounded-full bg-[#6D28D9] px-6 py-3 font-bold text-white transition hover:bg-[#5B21B6]">
               Mergi la Dashboard
             </button>
@@ -343,12 +360,12 @@ const InviteModal = () => {
 
             <div className="flex flex-col gap-2">
               <label htmlFor="startTime" className="font-medium text-[#29255E]">Start time</label>
-              <input id="startTime" name="startTime" type="time" value={formData.startTime} onChange={handleChange} step="900" required className="w-full rounded-full border-2 border-[#C4B5FD] bg-white px-5 py-3 focus:border-[#6D28D9] focus:outline-none" />
+              <input id="startTime" name="startTime" type="time" value={formData.startTime} onChange={handleChange} min={WORKDAY_START} max={WORKDAY_END} step="900" required className="w-full rounded-full border-2 border-[#C4B5FD] bg-white px-5 py-3 focus:border-[#6D28D9] focus:outline-none" />
             </div>
 
             <div className="flex flex-col gap-2 sm:col-span-2 sm:mx-auto sm:w-full sm:max-w-[calc((100%-1.5rem)/2)]">
               <label htmlFor="endTime" className="font-medium text-[#29255E]">End time</label>
-              <input id="endTime" name="endTime" type="time" value={formData.endTime} onChange={handleChange} min={formData.startTime || undefined} step="900" required className="w-full rounded-full border-2 border-[#C4B5FD] bg-white px-5 py-3 focus:border-[#6D28D9] focus:outline-none" />
+              <input id="endTime" name="endTime" type="time" value={formData.endTime} onChange={handleChange} min={formData.startTime || WORKDAY_START} max={WORKDAY_END} step="900" required className="w-full rounded-full border-2 border-[#C4B5FD] bg-white px-5 py-3 focus:border-[#6D28D9] focus:outline-none" />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -365,7 +382,7 @@ const InviteModal = () => {
               <label htmlFor="seatRoom" className="font-medium text-[#29255E]">Camera</label>
               <select id="seatRoom" name="seatRoom" value={formData.seatRoom} onChange={handleChange} required disabled={!hasValidDateTime || isCheckingAvailability || formData.seatFloor === ""} className="w-full rounded-full border-2 border-[#C4B5FD] bg-white px-5 py-3 focus:border-[#6D28D9] focus:outline-none disabled:cursor-not-allowed disabled:bg-[#F5F3FF] disabled:text-gray-400">
                 <option value="">Selecteaza camera</option>
-                {officeRoomsWithAvailableSeats.map((room) => (
+                {availableRooms.map((room) => (
                   <option key={room.id} value={room.id}>{room.name}</option>
                 ))}
               </select>
@@ -382,8 +399,10 @@ const InviteModal = () => {
             </div>
           </div>
 
+          {isDateInvalid && <p className="mt-4 text-center text-sm font-medium text-red-600">Invitatiile pot fi trimise doar pentru zile lucratoare.</p>}
+          {(isStartTimeOutOfRange || isEndTimeOutOfRange) && <p className="mt-4 text-center text-sm font-medium text-red-600">Programul disponibil este intre {WORKDAY_START} si {WORKDAY_END}.</p>}
           {isTimeInvalid && <p className="mt-4 text-center text-sm font-medium text-red-600">End time must be later than start time.</p>}
-          {isCheckingAvailability && <p className="mt-4 text-center text-sm font-medium text-[#29255E]" role="status">Se verifică disponibilitatea...</p>}
+          {isCheckingAvailability && <p className="mt-4 text-center text-sm font-medium text-[#29255E]" role="status">Se verifica disponibilitatea...</p>}
           {availabilityError !== "" && <p className="mt-4 text-center text-sm font-medium text-red-600">{availabilityError}</p>}
           <button type="submit" disabled={isFormInvalid || isSubmitting} className={`mt-8 w-full rounded-full px-6 py-4 text-lg font-bold text-white sm:mt-12 sm:text-xl ${isFormInvalid || isSubmitting ? "cursor-not-allowed bg-[#C4B5FD]" : "bg-[#6D28D9] hover:bg-[#5B21B6]"}`}>
             {isSubmitting ? "Se trimite..." : "Submit"}

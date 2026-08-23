@@ -61,6 +61,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             LocalDateTime startOfDay,
             LocalDateTime endOfDay);
 
+    boolean existsByUserAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            PostgresUser user,
+            Collection<Status> statuses,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime);
+
     boolean existsBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
             Long seatId,
             Collection<Status> statuses,

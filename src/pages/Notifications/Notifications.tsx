@@ -6,6 +6,25 @@ import { Bell } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import NotificationItem, { type Notification } from "./components/NotificationItem";
 
+type NotificationSeatApi = {
+  code: string;
+  room?: {
+    name: string;
+    code: string;
+    floor_id?: {
+      name: string;
+    };
+  };
+};
+
+type NotificationRoomApi = {
+  name: string;
+  code: string;
+  floor_id?: {
+    name: string;
+  };
+};
+
 type NotificationApi = {
   id: number;
   message: string;
@@ -16,28 +35,30 @@ type NotificationApi = {
     senderId: {
       name: string;
     };
-    seatId: {
-      code: string;
-      room?: {
-        name: string;
-        code: string;
-        floor_id?: {
-          name: string;
-        };
-      };
-    };
+    seatId: NotificationSeatApi;
     startDateTime: string;
     endDateTime: string;
     status: string;
   };
+  reservation?: {
+    id: number;
+    seat?: NotificationSeatApi;
+    room?: NotificationRoomApi;
+    startDateTime: string;
+    endDateTime: string;
+    status: string;
+  } | null;
 };
 
 type NotificationsProps = {
   onNotificationRemoved?: () => void;
 };
 
+const getNotificationStartDateTime = (notification: NotificationApi) =>
+  notification.invitation?.startDateTime ?? notification.reservation?.startDateTime;
+
 const isCurrentOrFutureNotification = (notification: NotificationApi) => {
-  const startDateTime = notification.invitation?.startDateTime;
+  const startDateTime = getNotificationStartDateTime(notification);
 
   if (!startDateTime) {
     return true;
@@ -52,6 +73,15 @@ const isCurrentOrFutureNotification = (notification: NotificationApi) => {
   return notificationDate >= today;
 };
 
+const mapNotificationStatus = (notification: NotificationApi) => {
+  const invitationStatus = notification.invitation?.status?.toLowerCase();
+
+  if (invitationStatus === "accepted") return "accepted" as const;
+  if (invitationStatus === "declined") return "declined" as const;
+
+  return "pending" as const;
+};
+
 const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -61,7 +91,7 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
   useEffect(() => {
     if (!user.postgresUserId) return;
 
-    fetch(`http://localhost:8080/api/notifications/user/${user.postgresUserId}`, {
+    fetch("http://localhost:8080/api/notifications/me/unread", {
       credentials: "include",
     })
       .then((response) => {
@@ -73,30 +103,35 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
       })
       .then((data: NotificationApi[]) => {
         setNotifications(
-          data.filter(isCurrentOrFutureNotification).map((notification) => {
-            const invitation = notification.invitation;
+          data
+            .filter(isCurrentOrFutureNotification)
+            .filter((notification) => notification.type !== "COLLEAGUES_COMING" || notification.reservation != null)
+            .map((notification) => {
+              const invitation = notification.invitation;
+              const reservation = notification.reservation;
+              const sourceSeat = invitation?.seatId ?? reservation?.seat;
+              const sourceRoom = sourceSeat?.room ?? reservation?.room;
+              const startDateTime = invitation?.startDateTime ?? reservation?.startDateTime ?? "";
+              const endDateTime = invitation?.endDateTime ?? reservation?.endDateTime ?? "";
 
-            return {
-              id: notification.id,
-              invitationId: invitation?.id,
-              message:
-                notification.message ||
-                `${invitation?.senderId.name ?? "Un coleg"} te-a invitat la birou.`,
-              date: invitation?.startDateTime.slice(0, 10) ?? "",
-              startTime: invitation?.startDateTime.slice(11, 16) ?? "",
-              endTime: invitation?.endDateTime.slice(11, 16) ?? "",
-              status: invitation?.status?.toLowerCase() === "accepted"
-                ? "accepted" as const
-                : invitation?.status?.toLowerCase() === "declined"
-                  ? "declined" as const
-                  : "pending" as const,
-              isRead: notification.read,
-              colleagueName: invitation?.senderId.name,
-              seatCode: invitation?.seatId.code,
-              roomName: invitation?.seatId.room?.name,
-              floorName: invitation?.seatId.room?.floor_id?.name,
-            };
-          })
+              return {
+                id: notification.id,
+                type: notification.type,
+                invitationId: invitation?.id,
+                message:
+                  notification.message ||
+                  `${invitation?.senderId.name ?? "Un coleg"} te-a invitat la birou.`,
+                date: startDateTime.slice(0, 10),
+                startTime: startDateTime.slice(11, 16),
+                endTime: endDateTime.slice(11, 16),
+                status: mapNotificationStatus(notification),
+                isRead: notification.read,
+                colleagueName: invitation?.senderId.name,
+                seatCode: sourceSeat?.code,
+                roomName: sourceRoom?.name,
+                floorName: sourceRoom?.floor_id?.name,
+              };
+            })
         );
       })
       .catch(() => {
@@ -124,19 +159,20 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
   };
 
   const handleAccept = async (notification: Notification) => {
-    if (!notification.invitationId) return;
+    const isInvitationNotification = notification.invitationId !== undefined;
+    const url = isInvitationNotification
+      ? `http://localhost:8080/api/invitations/${notification.invitationId}/accept`
+      : `http://localhost:8080/api/notifications/${notification.id}/accept`;
 
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/invitations/${notification.invitationId}/accept`,
-        {
-          method: "PUT",
-          credentials: "include",
-        }
-      );
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
 
       if (!response.ok) {
-        throw new Error("Nu s-a putut accepta invitatia.");
+        const message = await response.text();
+        throw new Error(message || "Nu s-a putut accepta invitatia.");
       }
 
       setNotifications((previousNotifications) =>
@@ -152,27 +188,29 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
       );
 
       removeNotification(notification.id);
-    } catch {
-      setErrorMessage("Nu s-a putut accepta invitatia. Verifica daca backend-ul ruleaza.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Nu s-a putut accepta invitatia.");
     }
   };
 
   const handleDecline = async (notificationId: number) => {
     const notification = notifications.find((item) => item.id === notificationId);
+    if (!notification) return;
 
-    if (!notification?.invitationId) return;
+    const isInvitationNotification = notification.invitationId !== undefined;
+    const url = isInvitationNotification
+      ? `http://localhost:8080/api/invitations/${notification.invitationId}/decline`
+      : `http://localhost:8080/api/notifications/${notification.id}/decline`;
 
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/invitations/${notification.invitationId}/decline`,
-        {
-          method: "PUT",
-          credentials: "include",
-        }
-      );
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
 
       if (!response.ok) {
-        throw new Error("Nu s-a putut refuza invitatia.");
+        const message = await response.text();
+        throw new Error(message || "Nu s-a putut refuza invitatia.");
       }
 
       setNotifications((previousNotifications) =>
@@ -188,8 +226,8 @@ const Notifications = ({ onNotificationRemoved }: NotificationsProps) => {
       );
 
       removeNotification(notificationId);
-    } catch {
-      setErrorMessage("Nu s-a putut refuza invitatia. Verifica daca backend-ul ruleaza.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Nu s-a putut refuza invitatia.");
     }
   };
 

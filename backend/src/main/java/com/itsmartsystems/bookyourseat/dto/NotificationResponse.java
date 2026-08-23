@@ -4,6 +4,7 @@ import com.itsmartsystems.bookyourseat.model.Floor;
 import com.itsmartsystems.bookyourseat.model.Invitation;
 import com.itsmartsystems.bookyourseat.model.Notification;
 import com.itsmartsystems.bookyourseat.model.PostgresUser;
+import com.itsmartsystems.bookyourseat.model.Reservation;
 import com.itsmartsystems.bookyourseat.model.Room;
 import com.itsmartsystems.bookyourseat.model.Seat;
 
@@ -18,6 +19,7 @@ public class NotificationResponse {
     private boolean read;
     private LocalDateTime createdAt;
     private InvitationDetails invitation;
+    private ReservationDetails reservation;
 
     public NotificationResponse(Notification notification) {
         this.id = notification.getId();
@@ -27,6 +29,7 @@ public class NotificationResponse {
         this.read = notification.isRead();
         this.createdAt = notification.getCreatedAt();
         this.invitation = notification.getInvitation() == null ? null : new InvitationDetails(notification.getInvitation());
+        this.reservation = notification.getReservation() == null ? null : new ReservationDetails(notification.getReservation());
     }
 
     public Long getId() { return id; }
@@ -36,6 +39,7 @@ public class NotificationResponse {
     public boolean isRead() { return read; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public InvitationDetails getInvitation() { return invitation; }
+    public ReservationDetails getReservation() { return reservation; }
 
     public static class InvitationDetails {
         private Long id;
@@ -65,6 +69,30 @@ public class NotificationResponse {
         public String getStatus() { return status; }
     }
 
+    public static class ReservationDetails {
+        private Long id;
+        private SeatDetails seat;
+        private RoomDetails room;
+        private LocalDateTime startDateTime;
+        private LocalDateTime endDateTime;
+        private String status;
+
+        public ReservationDetails(Reservation reservation) {
+            this.id = reservation.getId();
+            this.seat = reservation.getSeat() == null ? null : new SeatDetails(reservation.getSeat());
+            this.room = reservation.getRoom() == null ? null : new RoomDetails(reservation.getRoom());
+            this.startDateTime = reservation.getStartDateTime();
+            this.endDateTime = reservation.getEndDateTime();
+            this.status = reservation.getStatus() == null ? null : reservation.getStatus().name();
+        }
+
+        public Long getId() { return id; }
+        public SeatDetails getSeat() { return seat; }
+        public RoomDetails getRoom() { return room; }
+        public LocalDateTime getStartDateTime() { return startDateTime; }
+        public LocalDateTime getEndDateTime() { return endDateTime; }
+        public String getStatus() { return status; }
+    }
     public static class UserDetails {
         private Integer id;
         private String name;

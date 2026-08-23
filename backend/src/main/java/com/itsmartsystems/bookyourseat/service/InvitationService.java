@@ -1,6 +1,7 @@
 package com.itsmartsystems.bookyourseat.service;
 
 import com.itsmartsystems.bookyourseat.Status;
+import com.itsmartsystems.bookyourseat.dto.ColleagueDto;
 import com.itsmartsystems.bookyourseat.dto.InvitationRequest;
 import com.itsmartsystems.bookyourseat.model.Invitation;
 import com.itsmartsystems.bookyourseat.model.PostgresUser;
@@ -14,8 +15,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class InvitationService {
@@ -23,6 +26,10 @@ public class InvitationService {
     private static final String INVITATION_PENDING = "PENDING";
     private static final String INVITATION_ACCEPTED = "ACCEPTED";
     private static final String INVITATION_DECLINED = "DECLINED";
+    private static final List<Status> ACTIVE_RESERVATION_STATUSES = List.of(
+            Status.APPROVED,
+            Status.ACCEPTED,
+            Status.PENDING);
 
     private final InvitationRepository invitationRepository;
     private final PostgresUserRepository postgresUserRepository;
@@ -65,6 +72,8 @@ public class InvitationService {
             throw new IllegalArgumentException("Nu te poti invita pe tine insuti.");
         }
 
+        validateReceiverEligibility(sender, receiver, request.getStartDateTime().toLocalDate());
+
         Seat seat = seatRepository.findByIdForUpdate(request.getSeatId())
                 .orElseThrow(() -> new RuntimeException("Scaunul nu a fost gasit."));
 
@@ -94,6 +103,14 @@ public class InvitationService {
         n8nService.sendInvitationNotification(savedInvitation);
 
         return savedInvitation;
+    }
+
+    public List<ColleagueDto> getEligibleColleagues(PostgresUser currentUser, LocalDate date) {
+        return postgresUserRepository.findByDepartmentId(currentUser.getDepartmentId()).stream()
+                .filter(user -> !user.getId().equals(currentUser.getId()))
+                .filter(user -> date == null || !hasReservationOnDate(user, date))
+                .map(user -> new ColleagueDto(user.getId(), user.getName(), user.getEmail()))
+                .toList();
     }
 
     public List<Invitation> getPendingInvitationsForUser(Integer userId) {
@@ -209,11 +226,32 @@ public class InvitationService {
         }
     }
 
+    private void validateReceiverEligibility(PostgresUser sender, PostgresUser receiver, LocalDate invitationDate) {
+        if (!Objects.equals(sender.getDepartmentId(), receiver.getDepartmentId())) {
+            throw new IllegalArgumentException("Poti invita doar colegi din departamentul tau.");
+        }
+
+        if (hasReservationOnDate(receiver, invitationDate)) {
+            throw new IllegalArgumentException("Colegul selectat are deja o rezervare in ziua respectiva.");
+        }
+    }
+
+    private boolean hasReservationOnDate(PostgresUser user, LocalDate date) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+
+        return reservationRepository.existsByUserAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                user,
+                ACTIVE_RESERVATION_STATUSES,
+                endOfDay,
+                startOfDay);
+    }
+
     private void ensureSeatIsAvailable(Long seatId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         boolean isReserved = !reservationRepository
                 .findBySeat_IdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                         seatId,
-                        List.of(Status.APPROVED, Status.ACCEPTED, Status.PENDING),
+                        ACTIVE_RESERVATION_STATUSES,
                         endDateTime,
                         startDateTime)
                 .isEmpty();

@@ -6,10 +6,31 @@ import type { AssistantStatus } from "./types"
 const idleMessage =
   "Salut! Pot sa te ajut cu informatii despre vreme si trafic pentru drumul catre birou."
 
-const formatLocalDateTime = (date: Date) => {
-  const pad = (value: number) => String(value).padStart(2, "0")
+const fallbackCoords = {
+  latitude: 44.4268,
+  longitude: 26.1025,
+}
 
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+const getCurrentCoords = () =>
+  new Promise<GeolocationCoordinates | typeof fallbackCoords>((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(fallbackCoords)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(position.coords),
+      () => resolve(fallbackCoords),
+      { timeout: 8000 },
+    )
+  })
+
+const getLocalTargetHour = () => {
+  const now = new Date()
+  now.setMinutes(0, 0, 0)
+  now.setHours(now.getHours() + 1)
+  const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000
+  return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 19)
 }
 
 const backendTravelModeBySelection: Record<TravelMode, string> = {
@@ -26,62 +47,39 @@ const AIAssistant = () => {
   const [message, setMessage] = useState(idleMessage)
   const [travelMode, setTravelMode] = useState<TravelMode>("driving")
 
-  const handleRequestLocation = () => {
-    if (!navigator.geolocation) {
-      setStatus("error")
-      setMessage("Browserul tau nu permite accesarea locatiei.")
-      return
-    }
-
+  const handleRequestLocation = async () => {
     setStatus("requesting-location")
     setMessage("Astept permisiunea pentru locatie...")
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        setStatus("loading")
-        setMessage("Analizez traficul si vremea...")
+    const { latitude, longitude } = await getCurrentCoords()
 
-        const { latitude, longitude } = position.coords
+    setStatus("loading")
+    setMessage("Analizez traficul si vremea...")
 
-        // ora pentru care cerem recomandarea: acum, rotunjit la ora exacta urmatoare
-        const now = new Date()
-        now.setMinutes(0, 0, 0)
-        now.setHours(now.getHours() + 1)
-        const targetHour = formatLocalDateTime(now)
+    try {
+      const params = new URLSearchParams({
+        lat: String(latitude),
+        lng: String(longitude),
+        targetHour: getLocalTargetHour(),
+        metodaDeplasare: backendTravelModeBySelection[travelMode],
+      })
+      const url = `http://localhost:8080/recommendation?${params.toString()}`
+      const response = await fetch(url, { credentials: "include" })
 
-        try {
-          const params = new URLSearchParams({
-            lat: String(latitude),
-            lng: String(longitude),
-            targetHour,
-            metodaDeplasare: backendTravelModeBySelection[travelMode],
-          })
-          const url = `http://localhost:8080/recommendation?${params.toString()}`
-          const response = await fetch(url, { credentials: "include" })
-
-          if (!response.ok) {
-            setStatus("error")
-            setMessage("Nu am putut obtine recomandarea. Incearca din nou.")
-            return
-          }
-
-          const recomandare = await response.text()
-          setStatus("succes")
-          setMessage(recomandare)
-        } catch {
-          setStatus("error")
-          setMessage("Nu am putut contacta serverul.")
-        }
-      },
-      () => {
+      if (!response.ok) {
         setStatus("error")
-        setMessage(
-          "Nu am putut obtine locatia. Verifica permisiunile browserului si incearca din nou."
-        )
+        setMessage("Nu am putut obtine recomandarea. Incearca din nou.")
+        return
       }
-    )
-  }
 
+      const recomandare = await response.text()
+      setStatus("succes")
+      setMessage(recomandare)
+    } catch {
+      setStatus("error")
+      setMessage("Nu am putut contacta serverul.")
+    }
+  }
   return (
     <>
       {isOpen && (

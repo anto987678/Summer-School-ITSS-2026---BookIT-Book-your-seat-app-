@@ -3,6 +3,7 @@ import AuthFormShell from "@/components/auth/AuthFormShell"
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton"
 import { useEmailValidation } from "@/hooks/useEmailValidation"
 import { useFormData } from "@/hooks/useFormData"
+import { Eye, EyeOff } from "lucide-react"
 import {
   useState,
   type Dispatch,
@@ -19,6 +20,7 @@ const Login = ({ setIsLoggedIn }: LoginProps) => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const { formData, setFormData, handleChange } = useFormData(
     {
       email: "",
@@ -115,10 +117,20 @@ const Login = ({ setIsLoggedIn }: LoginProps) => {
         id="password"
         name="password"
         label="Password"
-        type="password"
+        type={showPassword ? "text" : "password"}
         placeholder="Enter your password"
         value={formData.password}
         onChange={handleChange}
+        rightElement={
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? "Ascunde parola" : "Arata parola"}
+            className="rounded-full p-1 text-[#6B7280] transition hover:bg-[#F5F3FF] hover:text-[#6D28D9]"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        }
       />
 
       <AuthSubmitButton disabled={isInactive}>

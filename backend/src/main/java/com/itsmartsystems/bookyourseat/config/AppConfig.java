@@ -12,5 +12,11 @@ public class AppConfig {
     public RestClient restClient() {
         return RestClient.create();
     }
+
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 }
 

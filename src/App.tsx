@@ -58,13 +58,20 @@ export default function App() {
   
   useEffect(() => {
     type NotificationCountApi = {
+      type: string
       invitation?: {
         startDateTime?: string
       }
+      reservation?: {
+        startDateTime?: string
+      } | null
     }
 
+    const getNotificationStartDateTime = (notification: NotificationCountApi) =>
+      notification.invitation?.startDateTime ?? notification.reservation?.startDateTime
+
     const isCurrentOrFutureNotification = (notification: NotificationCountApi) => {
-      const startDateTime = notification.invitation?.startDateTime
+      const startDateTime = getNotificationStartDateTime(notification)
 
       if (!startDateTime) {
         return true
@@ -79,13 +86,17 @@ export default function App() {
       return notificationDate >= today
     }
 
+    const isVisibleNotification = (notification: NotificationCountApi) =>
+      isCurrentOrFutureNotification(notification) &&
+      (notification.type !== "COLLEAGUES_COMING" || notification.reservation != null)
+
     if (!user.postgresUserId) {
       setNotificationCount(0)
       return
     }
 
     const loadNotificationCount = () => {
-      fetch(`http://localhost:8080/api/notifications/user/${user.postgresUserId}`, {
+      fetch("http://localhost:8080/api/notifications/me/unread", {
         credentials: "include",
       })
         .then((response) => {
@@ -96,7 +107,7 @@ export default function App() {
           return response.json()
         })
         .then((notifications: NotificationCountApi[]) => {
-          setNotificationCount(notifications.filter(isCurrentOrFutureNotification).length)
+          setNotificationCount(notifications.filter(isVisibleNotification).length)
         })
         .catch(() => {
           setNotificationCount(0)

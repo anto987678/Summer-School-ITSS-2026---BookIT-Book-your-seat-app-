@@ -29,6 +29,9 @@ const PasswordRules = ({ rules }: { rules: PasswordRule[] }) => (
   </div>
 );
 const API_URL = 'http://localhost:8080';
+const ROMANIAN_MOLDOVAN_PHONE_PATTERN = /^(?:0|\+40)[2-9]\d{8}$|^(?:0|\+373)[2-9]\d{7}$/;
+const PHONE_VALIDATION_MESSAGE = 'Format invalid. Exemple valide: 0722123456, +40722123456, 069123456, +37369123456';
+const normalizePhoneNumber = (phone: string) => phone.replace(/[\s().-]/g, '');
 
 const formatBookingDate = (date: string) => new Intl.DateTimeFormat('ro-RO', {
   day: '2-digit', month: 'short', year: 'numeric',
@@ -138,6 +141,12 @@ const UserDetails = () => {
     preferredTime: bookingPreferences.preferredTime
   };
 
+  const normalizedEditPhone = normalizePhoneNumber(editPhone);
+  const isPhoneValid = ROMANIAN_MOLDOVAN_PHONE_PATTERN.test(normalizedEditPhone);
+  const phoneValidationMessage = isEditing && editPhone.trim() !== '' && !isPhoneValid
+    ? PHONE_VALIDATION_MESSAGE
+    : '';
+  const phoneError = errors.phone || phoneValidationMessage;
   const specialCharactersCount = newPassword.match(specialCharacterRegex)?.length ?? 0;
   const passwordsMatch = newPassword !== "" && newPassword === confirmPassword;
   const passwordRules: PasswordRule[] = [
@@ -149,9 +158,13 @@ const UserDetails = () => {
 
   // --- HANDLERS (LOGICA DE SALVARE) ---
   const handleSaveProfile = async () => {
-    // Validare telefon (Câmp obligatoriu)
     if (!editPhone || editPhone.trim() === "") {
-      setErrors((prev) => ({ ...prev, phone: 'Numărul de telefon este obligatoriu!' }));
+      setErrors((prev) => ({ ...prev, phone: 'Numarul de telefon este obligatoriu!' }));
+      return;
+    }
+
+    if (!isPhoneValid) {
+      setErrors((prev) => ({ ...prev, phone: PHONE_VALIDATION_MESSAGE }));
       return;
     }
 
@@ -160,13 +173,13 @@ const UserDetails = () => {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: editPhone.trim() }),
+        body: JSON.stringify({ phoneNumber: normalizedEditPhone }),
       });
 
       if (!response.ok) throw new Error(await response.text());
 
       const updatedUser = await response.json() as { phoneNumber?: string };
-      setSavedPhone(updatedUser.phoneNumber ?? editPhone.trim());
+      setSavedPhone(updatedUser.phoneNumber ?? normalizedEditPhone);
       setIsEditing(false);
       setPasswordSuccess("");
       setErrors({ phone: '', password: '' });
@@ -260,7 +273,8 @@ const UserDetails = () => {
                 ) : (
                   <button
                     onClick={handleSaveProfile}
-                    className="rounded-full bg-[#8B5CF6] px-8 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#6D28D9] transition-colors"
+                    disabled={!isPhoneValid}
+                    className={`rounded-full px-8 py-2.5 text-sm font-bold text-white shadow-sm transition-colors ${isPhoneValid ? 'bg-[#8B5CF6] hover:bg-[#6D28D9]' : 'cursor-not-allowed bg-[#C4B5FD]'}`}
                   >
                     Save
                   </button>
@@ -285,8 +299,8 @@ const UserDetails = () => {
                 </div>
 
                 {/* TELEFON */}
-                <div className={`flex items-center gap-4 rounded-xl p-3 border ${errors.phone ? 'border-red-400 bg-red-50' : 'bg-white border-transparent'}`}>
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${errors.phone ? 'bg-red-100 text-red-500' : 'bg-[#F4F3FF] text-[#8B5CF6]'}`}>
+                <div className={`flex items-center gap-4 rounded-xl p-3 border ${phoneError ? 'border-red-400 bg-red-50' : 'bg-white border-transparent'}`}>
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${phoneError ? 'bg-red-100 text-red-500' : 'bg-[#F4F3FF] text-[#8B5CF6]'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                   </span>
                   <div className="flex-1">
@@ -294,20 +308,21 @@ const UserDetails = () => {
                     {isEditing ? (
                       <input
                         type="text"
+                        inputMode="tel"
                         value={editPhone}
                         onChange={(e) => {
                           setEditPhone(e.target.value);
                           if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
                         }}
                         className="w-full bg-transparent text-sm font-semibold text-[#29255E] outline-none placeholder-gray-400"
-                        placeholder="Ex: +40 721 123 456"
+                        placeholder="Ex: +40 721 123 456 sau +373 69 123 456"
                       />
                     ) : (
                       <p className="text-sm font-semibold text-[#29255E]">{userProfile.phone}</p>
                     )}
                   </div>
                 </div>
-                {errors.phone && <span className="text-xs font-semibold text-red-500 pl-2">{errors.phone}</span>}
+                {phoneError && <span className="text-xs font-semibold text-red-500 pl-2">{phoneError}</span>}
 
                 {/* DEPARTAMENT */}
                 <div className="flex items-center gap-4 rounded-xl bg-white p-3 border border-transparent">

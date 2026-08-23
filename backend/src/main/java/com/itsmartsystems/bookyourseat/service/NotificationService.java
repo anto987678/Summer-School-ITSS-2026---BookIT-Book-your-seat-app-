@@ -33,7 +33,7 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<Notification> getNotificationsForUser(Integer userId) {
-        return notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId);
+        return notificationRepository.findWithDetailsByUserIdOrderByCreatedAtDesc(userId);
     }
 
     @Transactional(readOnly = true)
@@ -134,9 +134,11 @@ public class NotificationService {
             throw new IllegalStateException("Nu exista locuri disponibile in aceeasi sala pentru intervalul respectiv.");
         }
 
+        Seat reservedSeat = availableSeats.get(0);
+
         Reservation created = new Reservation(
                 accepter,
-                availableSeats.get(0),
+                reservedSeat,
                 null,
                 referenceReservation.getStartDateTime(),
                 referenceReservation.getEndDateTime(),

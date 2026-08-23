@@ -1,8 +1,9 @@
-﻿export type NotificationStatus = "pending" | "accepted" | "declined"
+export type NotificationStatus = "pending" | "accepted" | "declined"
 
 export type Notification = {
   id: number;
   invitationId?: number;
+  type: string;
   message: string;
   date: string;
   startTime: string;

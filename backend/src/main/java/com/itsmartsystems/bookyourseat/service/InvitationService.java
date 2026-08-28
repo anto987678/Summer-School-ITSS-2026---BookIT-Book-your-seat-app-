@@ -4,8 +4,10 @@ import com.itsmartsystems.bookyourseat.Status;
 import com.itsmartsystems.bookyourseat.dto.ColleagueDto;
 import com.itsmartsystems.bookyourseat.dto.InvitationRequest;
 import com.itsmartsystems.bookyourseat.model.Invitation;
+import com.itsmartsystems.bookyourseat.model.Notification;
 import com.itsmartsystems.bookyourseat.model.PostgresUser;
 import com.itsmartsystems.bookyourseat.model.Reservation;
+import com.itsmartsystems.bookyourseat.model.Room;
 import com.itsmartsystems.bookyourseat.model.Seat;
 import com.itsmartsystems.bookyourseat.repository.InvitationRepository;
 import com.itsmartsystems.bookyourseat.repository.PostgresUserRepository;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -158,6 +161,7 @@ public class InvitationService {
 
         invitationRepository.save(invitation);
         notificationService.markInvitationNotificationAsRead(invitationId);
+        createAutomaticColleagueNotifications(savedReservation);
         n8nService.sendInvitationResponseNotification(invitation);
     }
 
@@ -186,6 +190,65 @@ public class InvitationService {
                 });
     }
 
+    private void createAutomaticColleagueNotifications(Reservation savedReservation) {
+        PostgresUser currentUser = savedReservation.getUser();
+        if (currentUser == null || currentUser.getDepartmentId() == null) {
+            return;
+        }
+
+        if (isEventRoomReservation(savedReservation)) {
+            return;
+        }
+
+        LocalDateTime startOfDay = savedReservation.getStartDateTime().toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = savedReservation.getStartDateTime().toLocalDate().atTime(LocalTime.MAX);
+
+        List<Reservation> departmentReservations = reservationRepository.findByUserDepartmentIdAndStartDateTimeBetween(
+                currentUser.getDepartmentId(), startOfDay, endOfDay);
+
+        long activeDepartmentUsers = departmentReservations.stream()
+                .filter(reservation -> ACTIVE_RESERVATION_STATUSES.contains(reservation.getStatus()))
+                .filter(reservation -> !isEventRoomReservation(reservation))
+                .map(Reservation::getUser)
+                .filter(Objects::nonNull)
+                .map(PostgresUser::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
+
+        if (activeDepartmentUsers < 2) {
+            return;
+        }
+
+        for (PostgresUser colleague : postgresUserRepository.findByDepartmentId(currentUser.getDepartmentId())) {
+            if (colleague.getId().equals(currentUser.getId())) {
+                continue;
+            }
+
+            boolean hasReservation = reservationRepository.existsByUserAndStartDateTimeBetween(colleague, startOfDay, endOfDay);
+            if (hasReservation || notificationService.notificationExistsForUserAndReservation(colleague.getId(), savedReservation.getId())) {
+                continue;
+            }
+
+            String message = "Your colleagues are coming to the office on " + savedReservation.getStartDateTime().toLocalDate();
+            Notification notification = notificationService.createColleaguesComingNotification(colleague, savedReservation, message);
+            System.out.println("Created colleagues-coming notification id=" + notification.getId() + " for user=" + colleague.getEmail());
+        }
+    }
+
+    private boolean isEventRoomReservation(Reservation reservation) {
+        Room room = getReservationRoom(reservation);
+        return room != null && "EVENT_ROOM".equals(room.getType());
+    }
+
+    private Room getReservationRoom(Reservation reservation) {
+        if (reservation.getRoom() != null) {
+            return reservation.getRoom();
+        }
+
+        Seat seat = reservation.getSeat();
+        return seat == null ? null : seat.getRoom();
+    }
     private void validatePendingInvitation(Invitation invitation, Integer currentUserId) {
         if (!INVITATION_PENDING.equals(invitation.getStatus())) {
             throw new RuntimeException("Invitatia a fost deja procesata.");

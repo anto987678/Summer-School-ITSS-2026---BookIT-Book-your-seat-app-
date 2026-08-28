@@ -16,11 +16,32 @@ type LocationState = {
   endHour?: number;
 }
 
-const HOURS = Array.from({ length: 11 }, (_, i) => 8 + i)
+const HOURS = Array.from({ length: 15 }, (_, i) => 8 + i)
 const MS_IN_DAY = 24 * 60 * 60 * 1000
 
 const addDays = (date: Date, days: number) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
+
+const isWeekend = (date: Date) => {
+  const dayOfWeek = date.getDay()
+  return dayOfWeek === 0 || dayOfWeek === 6
+}
+
+const isWeekendDateValue = (dateValue: string) => {
+  const [year, month, day] = dateValue.split('-').map(Number)
+  return isWeekend(new Date(year, month - 1, day))
+}
+
+const getNextBusinessDay = (date: Date) => {
+  const nextDate = new Date(date)
+  nextDate.setHours(0, 0, 0, 0)
+
+  while (isWeekend(nextDate)) {
+    nextDate.setDate(nextDate.getDate() + 1)
+  }
+
+  return nextDate
+}
 
 const toDateValue = (date: Date) => {
   const an = date.getFullYear();
@@ -42,12 +63,12 @@ const SelectDateTime = () => {
   const [date, setDate] = useState(() => {
     if (state?.date) {
       const [year, month, day] = state.date.split("-").map(Number)
-      return new Date(year, month - 1, day)
+      return getNextBusinessDay(new Date(year, month - 1, day))
     }
 
     const azi = new Date();
     azi.setHours(0, 0, 0, 0);
-    return azi;
+    return getNextBusinessDay(azi);
   });
 
   const [startHour, setStartHour] = useState(state?.startHour ?? 8)
@@ -76,6 +97,13 @@ const SelectDateTime = () => {
   };
 
   const handleContinue = () => {
+    const selectedDateValue = toDateValue(date)
+
+    if (isWeekendDateValue(selectedDateValue)) {
+      setShowWeekendError(true)
+      return
+    }
+
     if (endHour <= startHour) {
       setError("Ora de sfarsit trebuie sa fie dupa ora de inceput.")
       return
@@ -84,7 +112,7 @@ const SelectDateTime = () => {
     navigate("/seats", {
       state: {
         bookingType,
-        date: toDateValue(date),
+        date: selectedDateValue,
         endDate: toDateValue(endDate),
         recurrenceDates: recurrenceDates.map(toDateValue),
         startHour,
@@ -101,16 +129,13 @@ const SelectDateTime = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const dayOfWeek = newDate.getDay();
-
-
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
+    if (isWeekend(newDate)) {
       setShowWeekendError(true)
       return
     }
 
     if (newDate < today) {
-      setError("Nu poți selecta o dată din trecut.")
+      setError("Nu poti selecta o data din trecut.")
       return
     }
 
@@ -179,9 +204,9 @@ const SelectDateTime = () => {
 
       {showWeekendError && (
         <ErrorPopUp
-          title="Dată invalidă"
-          message="Poți selecta doar zile de luni până vineri."
-          buttonText="Închide"
+          title="Data invalida"
+          message="Poti selecta doar zile de luni pana vineri."
+          buttonText="Inchide"
           onClose={() => setShowWeekendError(false)}
         />
       )}

@@ -166,7 +166,13 @@ const History = () => {
       })
       .then((reservations: ReservationApi[]) => {
         setBookings(
-          reservations.map((reservation, index) => ({
+          [...reservations]
+            .sort(
+              (a, b) =>
+                new Date(a.startDateTime).getTime() -
+                new Date(b.startDateTime).getTime()
+            )
+            .map((reservation, index) => ({
             id: reservation.id,
             title: `Rezervare ${index + 1}`,
             date: formatDate(reservation.startDateTime),
@@ -212,7 +218,7 @@ const History = () => {
                 return (
                   <div key={booking.id}>
                     <h4 className="mb-2 text-sm font-bold text-gray-700">{booking.title}</h4>
-                    <div className="flex flex-col gap-4 rounded-2xl bg-[#F8F8FC] p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                    <div className="grid gap-4 rounded-2xl bg-[#F8F8FC] p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_150px_360px] md:items-center">
                       <div className="flex min-w-0 items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EBE9FE]">
                           <span className="text-xl">S</span>
@@ -226,11 +232,11 @@ const History = () => {
                         </div>
                       </div>
 
-                      <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${getBookingStatusClassName(booking.status)}`}>
+                      <span className={`w-fit justify-self-start rounded-full px-3 py-1 text-xs font-bold md:justify-self-center ${getBookingStatusClassName(booking.status)}`}>
                         {booking.status}
                       </span>
 
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-3 md:justify-end">
                         <button
                           type="button"
                           onClick={canCancel ? () => handleDeleteClick(booking.id) : undefined}

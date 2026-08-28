@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import DashboardCard from "./DashboardCard"
 import {
   CloudRain,
@@ -36,11 +36,27 @@ type TrafficItem = {
   color: string
 }
 
+
 const fallbackCoords = {
   latitude: 44.4268,
   longitude: 26.1025,
 }
 
+const geolocationOptions: PositionOptions = {
+  enableHighAccuracy: true,
+  maximumAge: 0,
+  timeout: 15000,
+}
+
+const isReliableRomaniaLocation = (coords: GeolocationCoordinates) => {
+  const isInsideRomania =
+    coords.latitude >= 43.5 &&
+    coords.latitude <= 48.5 &&
+    coords.longitude >= 20 &&
+    coords.longitude <= 30
+
+  return isInsideRomania && coords.accuracy <= 50000
+}
 const getCurrentCoords = () =>
   new Promise<GeolocationCoordinates>((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -49,9 +65,16 @@ const getCurrentCoords = () =>
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position.coords),
+      (position) => {
+        if (isReliableRomaniaLocation(position.coords)) {
+          resolve(position.coords)
+          return
+        }
+
+        reject(new Error("Geolocation outside expected area"))
+      },
       reject,
-      { timeout: 8000 },
+      geolocationOptions,
     )
   })
 

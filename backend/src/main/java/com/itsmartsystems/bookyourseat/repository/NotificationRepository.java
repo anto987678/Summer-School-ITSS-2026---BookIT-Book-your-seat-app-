@@ -57,15 +57,38 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         left join fetch reservationRoom.floor
         where n.user.id = :userId
         and n.isRead = false
+        and (n.type <> 'COLLEAGUES_COMING' or reservation is not null)
+        and (
+            (invitation is null and reservation is null)
+            or (invitation is not null and invitation.startDateTime >= :startOfToday)
+            or (reservation is not null and reservation.startDateTime >= :startOfToday)
+        )
         order by n.createdAt desc
     """)
-    List<Notification> findUnreadWithDetailsByUserId(@Param("userId") Integer userId);
+    List<Notification> findUnreadWithDetailsByUserId(
+            @Param("userId") Integer userId,
+            @Param("startOfToday") LocalDateTime startOfToday);
 
     List<Notification> findByType(String type);
 
     List<Notification> findByUser_IdAndType(Integer userId, String type);
 
-    long countByUser_IdAndIsReadFalse(Integer userId);
+    @Query("""
+        select count(n) from Notification n
+        left join n.invitation invitation
+        left join n.reservation reservation
+        where n.user.id = :userId
+        and n.isRead = false
+        and (n.type <> 'COLLEAGUES_COMING' or reservation is not null)
+        and (
+            (invitation is null and reservation is null)
+            or (invitation is not null and invitation.startDateTime >= :startOfToday)
+            or (reservation is not null and reservation.startDateTime >= :startOfToday)
+        )
+    """)
+    long countVisibleUnreadByUserId(
+            @Param("userId") Integer userId,
+            @Param("startOfToday") LocalDateTime startOfToday);
 
     Optional<Notification> findByInvitation_Id(Long invitationId);
 

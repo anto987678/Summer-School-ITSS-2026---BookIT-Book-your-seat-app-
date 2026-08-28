@@ -13,6 +13,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByUser_Id(Integer userId);
 
+    List<Reservation> findByUser_IdOrderByStartDateTimeAsc(Integer userId);
+
     List<Reservation> findBySeat_Id(Long seatId);
 
     List<Reservation> findByRoom_Id(Long roomId);

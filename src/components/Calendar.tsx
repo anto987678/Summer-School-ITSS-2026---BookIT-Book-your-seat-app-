@@ -84,12 +84,12 @@ export default function Calendar({ selected, onSelect, recurrenceDates = [] }: C
             <div
               key={i}
               onClick={() => {
-                if (day && !weekend) {
+                if (day) {
                   onSelect(getDayDate(day))
                 }
               }}
               style={{
-                cursor: day && !weekend ? "pointer" : "default",
+                cursor: day ? "pointer" : "default",
                 borderRadius: "50%",
                 width: 30,
                 height: 30,

@@ -38,9 +38,14 @@ public class N8nService {
     @Value("${n8n.invitation.webhook.url:}")
     private String invitationWebhook;
 
-    @Value("${n8n.invitation-response.webhook.url:}")
+    @Value("${n8n.invitation-response.webhook.url:${n8n.invitation.response.webhook.url:}}")
     private String invitationResponseWebhook;
 
+    @Value("${n8n.forgot-password.webhook.url:}")
+    private String forgotPasswordWebhook;
+
+    @Value("${app.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
     private final RestClient restClient;
 
     public N8nService(RestClient restClient) {
@@ -87,6 +92,23 @@ public class N8nService {
         payload.put("senderEmail", invitation.getSenderId() == null ? null : invitation.getSenderId().getEmail());
         payload.put("receiverEmail", invitation.getReceiverId() == null ? null : invitation.getReceiverId().getEmail());
         postPayload(invitationResponseWebhook, payload, "invitation response");
+    }
+
+
+    public boolean isForgotPasswordWebhookConfigured() {
+        return StringUtils.hasText(forgotPasswordWebhook);
+    }
+
+    @Async
+    public void sendForgotPasswordEmail(String email, String token) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("email", email);
+        payload.put("token", token);
+        payload.put("resetUrl", frontendBaseUrl + "/reset-password?token=" + token);
+        payload.put("expiresInMinutes", 15);
+        payload.put("subject", "Resetare parola Book Your Seat");
+
+        postPayload(forgotPasswordWebhook, payload, "forgot password");
     }
 
     private Map<String, Object> buildReservationPayload(Reservation reservation) {

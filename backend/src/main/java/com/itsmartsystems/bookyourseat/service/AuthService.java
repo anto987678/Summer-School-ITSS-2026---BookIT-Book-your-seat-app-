@@ -40,6 +40,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final N8nService n8nService;
     private final UserSyncService userSyncService;
     private final PostgresUserRepository postgresUserRepository;
     private final DepartmentRepository departmentRepository;
@@ -49,6 +50,7 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             EmailService emailService,
+            N8nService n8nService,
             UserSyncService userSyncService,
             PostgresUserRepository postgresUserRepository,
             DepartmentRepository departmentRepository,
@@ -57,6 +59,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
+        this.n8nService = n8nService;
         this.userSyncService = userSyncService;
         this.postgresUserRepository = postgresUserRepository;
         this.departmentRepository = departmentRepository;
@@ -164,7 +167,11 @@ public class AuthService {
         user.setTokenExpiresAt(expiresAt);
         User savedUser = userRepository.save(user);
         userSyncService.syncUser(savedUser);
-        emailService.emailToSend(user.getEmail(), token);
+        if (n8nService.isForgotPasswordWebhookConfigured()) {
+            n8nService.sendForgotPasswordEmail(user.getEmail(), token);
+        } else {
+            emailService.emailToSend(user.getEmail(), token);
+        }
     }
 
     public void handleFirstLogin(User user) {

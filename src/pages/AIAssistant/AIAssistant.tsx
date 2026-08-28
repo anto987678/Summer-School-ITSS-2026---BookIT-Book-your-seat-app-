@@ -6,22 +6,41 @@ import type { AssistantStatus } from "./types"
 const idleMessage =
   "Salut! Pot sa te ajut cu informatii despre vreme si trafic pentru drumul catre birou."
 
-const fallbackCoords = {
-  latitude: 44.4268,
-  longitude: 26.1025,
+
+const geolocationOptions: PositionOptions = {
+  enableHighAccuracy: true,
+  maximumAge: 0,
+  timeout: 15000,
+}
+
+const isReliableRomaniaLocation = (coords: GeolocationCoordinates) => {
+  const isInsideRomania =
+    coords.latitude >= 43.5 &&
+    coords.latitude <= 48.5 &&
+    coords.longitude >= 20 &&
+    coords.longitude <= 30
+
+  return isInsideRomania && coords.accuracy <= 50000
 }
 
 const getCurrentCoords = () =>
-  new Promise<GeolocationCoordinates | typeof fallbackCoords>((resolve) => {
+  new Promise<GeolocationCoordinates>((resolve, reject) => {
     if (!navigator.geolocation) {
-      resolve(fallbackCoords)
+      reject(new Error("Geolocation unavailable"))
       return
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position.coords),
-      () => resolve(fallbackCoords),
-      { timeout: 8000 },
+      (position) => {
+        if (isReliableRomaniaLocation(position.coords)) {
+          resolve(position.coords)
+          return
+        }
+
+        reject(new Error("Geolocation outside expected area"))
+      },
+      reject,
+      geolocationOptions,
     )
   })
 
@@ -51,7 +70,18 @@ const AIAssistant = () => {
     setStatus("requesting-location")
     setMessage("Astept permisiunea pentru locatie...")
 
-    const { latitude, longitude } = await getCurrentCoords()
+    let latitude: number
+    let longitude: number
+
+    try {
+      const coords = await getCurrentCoords()
+      latitude = coords.latitude
+      longitude = coords.longitude
+    } catch {
+      setStatus("error")
+      setMessage("Browserul nu poate determina locatia ta reala. Verifica setarile de locatie din Windows/browser sau introdu locatia manual.")
+      return
+    }
 
     setStatus("loading")
     setMessage("Analizez traficul si vremea...")

@@ -144,26 +144,38 @@ const OfficeActivityCard = () => {
   const maximumDays = Math.max(1, ...officeActivity.map((item) => item.days));
   const hasPreferredZones = preferredZones.length > 0;
 
-  let currentPercentage = 0;
+  const donutSize = 128;
+  const donutStroke = 30;
+  const donutRadius = 49;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+  const donutGap = hasPreferredZones && preferredZones.length > 1 ? 3 : 0;
+  const totalPreferredPercentage = preferredZones.reduce(
+    (sum, zone) => sum + zone.percentage,
+    0
+  );
+  const drawableCircumference = donutCircumference - donutGap * preferredZones.length;
+  let donutOffset = 0;
+  const donutSegments = preferredZones.map((zone) => {
+    const segmentLength =
+      totalPreferredPercentage > 0
+        ? (zone.percentage / totalPreferredPercentage) * drawableCircumference
+        : 0;
+    const segment = {
+      ...zone,
+      segmentLength,
+      dashOffset: -donutOffset,
+    };
 
-  const donutGradient = hasPreferredZones
-    ? preferredZones
-        .map((zone) => {
-          const start = currentPercentage;
-          const end = start + zone.percentage;
+    donutOffset += segmentLength + donutGap;
 
-          currentPercentage = end;
-
-          return `${zone.color} ${start}% ${end}%`;
-        })
-        .join(", ")
-    : "#E9D5FF 0% 100%";
+    return segment;
+  });
 
   const topZoneInitial = preferredZones[0]?.name.charAt(0).toUpperCase() ?? "-";
 
   return (
     <DashboardCard title="Your Office Activity">
-      <p className="mt-1 text-xs text-gray-400">Weekly days in office</p>
+      <p className="mt-1 text-xs text-[#29255E]">Weekly days in office</p>
 
       <div className="relative mt-5 h-[180px]">
         <div className="pointer-events-none absolute inset-x-0 top-6 border-t border-gray-200" />
@@ -176,7 +188,7 @@ const OfficeActivityCard = () => {
               key={item.label}
               className="flex h-full flex-1 flex-col items-center justify-end"
             >
-              <span className="mb-1 text-xs text-gray-500">{item.days}d</span>
+              <span className="mb-1 text-xs text-[#29255E]">{item.days}d</span>
 
               <div
                 className="w-8 rounded-t-md bg-[#7C3AED] transition-all hover:bg-[#6D28D9]"
@@ -185,7 +197,7 @@ const OfficeActivityCard = () => {
                 }}
               />
 
-              <span className="mt-2 text-xs text-gray-400">{item.label}</span>
+              <span className="mt-2 text-xs text-[#29255E]">{item.label}</span>
             </div>
           ))}
         </div>
@@ -194,18 +206,45 @@ const OfficeActivityCard = () => {
       <div className="mt-5">
         <h4 className="font-semibold text-[#29255E]">Preferred Seat Zones</h4>
 
-        <p className="mt-1 text-xs text-gray-400">All-time distribution</p>
+        <p className="mt-1 text-xs text-[#29255E]">All-time distribution</p>
 
         <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row">
-          <div
-            className="relative h-32 w-32 shrink-0 rounded-full"
-            style={{
-              background: `conic-gradient(${donutGradient})`,
-            }}
-          >
+          <div className="relative h-32 w-32 shrink-0">
+            <svg
+              className="h-32 w-32 -rotate-90"
+              viewBox={`0 0 ${donutSize} ${donutSize}`}
+              aria-hidden="true"
+            >
+              {hasPreferredZones ? (
+                donutSegments.map((zone) => (
+                  <circle
+                    key={zone.name}
+                    cx={donutSize / 2}
+                    cy={donutSize / 2}
+                    r={donutRadius}
+                    fill="none"
+                    stroke={zone.color}
+                    strokeWidth={donutStroke}
+                    strokeDasharray={`${zone.segmentLength} ${donutCircumference - zone.segmentLength}`}
+                    strokeDashoffset={zone.dashOffset}
+                    shapeRendering="geometricPrecision"
+                  />
+                ))
+              ) : (
+                <circle
+                  cx={donutSize / 2}
+                  cy={donutSize / 2}
+                  r={donutRadius}
+                  fill="none"
+                  stroke="#E9D5FF"
+                  strokeWidth={donutStroke}
+                />
+              )}
+            </svg>
+
             <div className="absolute inset-[26px] flex items-center justify-center rounded-full bg-white">
               <div className="text-center">
-                <p className="text-xs text-gray-400">Top</p>
+                <p className="text-xs text-[#29255E]">Top</p>
 
                 <p className="font-bold text-[#29255E]">{topZoneInitial}</p>
               </div>
@@ -223,13 +262,13 @@ const OfficeActivityCard = () => {
                     }}
                   />
 
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-[#29255E]">
                     {zone.name} ({zone.percentage}%)
                   </span>
                 </div>
               ))
             ) : (
-              <span className="text-xs text-gray-400">No reservations yet</span>
+              <span className="text-xs text-[#29255E]">No reservations yet</span>
             )}
           </div>
         </div>

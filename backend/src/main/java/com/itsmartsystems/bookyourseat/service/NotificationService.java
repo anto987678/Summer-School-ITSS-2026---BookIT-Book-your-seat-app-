@@ -6,6 +6,7 @@ import com.itsmartsystems.bookyourseat.model.Invitation;
 import com.itsmartsystems.bookyourseat.model.Notification;
 import com.itsmartsystems.bookyourseat.model.PostgresUser;
 import com.itsmartsystems.bookyourseat.model.Reservation;
+import com.itsmartsystems.bookyourseat.model.Room;
 import com.itsmartsystems.bookyourseat.model.Seat;
 import com.itsmartsystems.bookyourseat.repository.NotificationRepository;
 import com.itsmartsystems.bookyourseat.repository.ReservationRepository;
@@ -13,6 +14,7 @@ import com.itsmartsystems.bookyourseat.repository.SeatRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,11 +40,11 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<Notification> getUnreadNotificationsForUser(Integer userId) {
-        return notificationRepository.findUnreadWithDetailsByUserId(userId);
+        return notificationRepository.findUnreadWithDetailsByUserId(userId, LocalDate.now().atStartOfDay());
     }
 
     public long countUnreadNotificationsForUser(Integer userId) {
-        return notificationRepository.countByUser_IdAndIsReadFalse(userId);
+        return notificationRepository.countVisibleUnreadByUserId(userId, LocalDate.now().atStartOfDay());
     }
 
     public Notification markAsRead(Long notificationId) {
@@ -115,16 +117,16 @@ public class NotificationService {
             throw new IllegalArgumentException("Notificarea nu are o rezervare de referinta.");
         }
 
-        Long roomId = null;
-        if (referenceReservation.getRoom() != null) {
-            roomId = referenceReservation.getRoom().getId();
-        } else if (referenceReservation.getSeat() != null && referenceReservation.getSeat().getRoom() != null) {
-            roomId = referenceReservation.getSeat().getRoom().getId();
-        }
-
-        if (roomId == null) {
+        Room referenceRoom = getReservationRoom(referenceReservation);
+        if (referenceRoom == null) {
             throw new IllegalArgumentException("Nu se poate determina sala pentru rezervarea de referinta.");
         }
+
+        if ("EVENT_ROOM".equals(referenceRoom.getType())) {
+            throw new IllegalArgumentException("Invitatia automata nu poate rezerva locuri intr-o sala de evenimente.");
+        }
+
+        Long roomId = referenceRoom.getId();
 
         List<Seat> availableSeats = seatRepository.findAndLockAvailableSeatsInRoom(
                 roomId,
@@ -153,6 +155,14 @@ public class NotificationService {
         return saved;
     }
 
+    private Room getReservationRoom(Reservation reservation) {
+        if (reservation.getRoom() != null) {
+            return reservation.getRoom();
+        }
+
+        Seat seat = reservation.getSeat();
+        return seat == null ? null : seat.getRoom();
+    }
     public void markInvitationNotificationAsRead(Long invitationId) {
         notificationRepository.findByInvitation_Id(invitationId).ifPresent(notification -> {
             notification.setRead(true);

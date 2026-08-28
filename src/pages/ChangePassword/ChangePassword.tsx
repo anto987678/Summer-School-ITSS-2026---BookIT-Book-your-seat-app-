@@ -20,7 +20,8 @@ const ChangePassword = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as ChangePasswordState | null
-
+  const resetToken = new URLSearchParams(location.search).get("token")
+  const isResetFlow = location.pathname === "/reset-password"
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -63,26 +64,46 @@ const ChangePassword = () => {
       return
     }
 
+    if (isResetFlow && !resetToken) {
+      setError("Tokenul de resetare lipseste sau linkul este invalid.")
+      return
+    }
     setLoading(true)
 
     try {
-      const response = await fetch("http://localhost:8080/change-password", {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        isResetFlow ? "http://localhost:8080/reset-password" : "http://localhost:8080/change-password",
+        {
+          method: isResetFlow ? "POST" : "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            isResetFlow
+              ? {
+                  newPassword: formData.newPassword,
+                  cNewPassword: confirmPassword,
+                  token: resetToken,
+                }
+              : {
+                  email: formData.email,
+                  oldPassword: formData.oldPassword,
+                  newPassword: formData.newPassword,
+                },
+          ),
         },
-        body: JSON.stringify({
-          email: formData.email,
-          oldPassword: formData.oldPassword,
-          newPassword: formData.newPassword,
-        }),
-      })
+      )
 
       const message = await response.text()
 
       if (!response.ok) {
         setError(message || "Parola nu a putut fi modificata.")
+        return
+      }
+
+      if (isResetFlow) {
+        navigate("/login")
         return
       }
 
@@ -110,8 +131,8 @@ const ChangePassword = () => {
   }
 
   const isInactive =
-    formData.email.trim() === "" ||
-    formData.oldPassword === "" ||
+    (!isResetFlow && formData.email.trim() === "") ||
+    (!isResetFlow && formData.oldPassword === "") ||
     formData.newPassword === "" ||
     confirmPassword === "" ||
     !isPasswordValid
@@ -139,7 +160,7 @@ const ChangePassword = () => {
       </h1>
 
       <p className="text-center text-base text-[#6B7280] sm:text-[20px]">
-        Trebuie sa-ti setezi o parola noua inainte de a continua.
+        {isResetFlow ? "Seteaza o parola noua pentru contul tau." : "Trebuie sa-ti setezi o parola noua inainte de a continua."}
       </p>
 
       <AuthFormField
@@ -195,7 +216,7 @@ const ChangePassword = () => {
       </div>
 
       <AuthSubmitButton disabled={isInactive || loading}>
-        {loading ? "Changing password..." : "Change password"}
+        {loading ? "Changing password..." : isResetFlow ? "Reset password" : "Change password"}
       </AuthSubmitButton>
     </AuthFormShell>
   )

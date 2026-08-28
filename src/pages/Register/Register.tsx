@@ -143,12 +143,7 @@ const Register = (_props: RegisterProps) => {
         return
       }
 
-      navigate("/change-password", {
-        state: {
-          email: formData.email.trim(),
-          oldPassword: formData.password,
-        },
-      })
+      navigate("/login")
     } catch {
       setError(
         "Nu am putut contacta serverul. Incearca din nou.",

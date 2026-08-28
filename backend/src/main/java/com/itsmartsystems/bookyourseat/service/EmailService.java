@@ -1,6 +1,7 @@
 package com.itsmartsystems.bookyourseat.service;
 
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 
 @Service
 public class EmailService {
+
+    @Value("${app.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
 
     private final JavaMailSender sender ;
     public EmailService(JavaMailSender sender)

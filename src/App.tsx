@@ -47,6 +47,7 @@ export default function App() {
     "/signup",
     "/forgot-password",
     "/change-password",
+    "/reset-password",
     "/legacy-home",
     "/"
   ]
@@ -57,38 +58,9 @@ export default function App() {
     useState(false)
   
   useEffect(() => {
-    type NotificationCountApi = {
-      type: string
-      invitation?: {
-        startDateTime?: string
-      }
-      reservation?: {
-        startDateTime?: string
-      } | null
+    type NotificationCountResponse = {
+      count: number
     }
-
-    const getNotificationStartDateTime = (notification: NotificationCountApi) =>
-      notification.invitation?.startDateTime ?? notification.reservation?.startDateTime
-
-    const isCurrentOrFutureNotification = (notification: NotificationCountApi) => {
-      const startDateTime = getNotificationStartDateTime(notification)
-
-      if (!startDateTime) {
-        return true
-      }
-
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      const notificationDate = new Date(startDateTime)
-      notificationDate.setHours(0, 0, 0, 0)
-
-      return notificationDate >= today
-    }
-
-    const isVisibleNotification = (notification: NotificationCountApi) =>
-      isCurrentOrFutureNotification(notification) &&
-      (notification.type !== "COLLEAGUES_COMING" || notification.reservation != null)
 
     if (!user.postgresUserId) {
       setNotificationCount(0)
@@ -96,7 +68,7 @@ export default function App() {
     }
 
     const loadNotificationCount = () => {
-      fetch("http://localhost:8080/api/notifications/me/unread", {
+      fetch("http://localhost:8080/api/notifications/me/unread-count", {
         credentials: "include",
       })
         .then((response) => {
@@ -106,8 +78,8 @@ export default function App() {
 
           return response.json()
         })
-        .then((notifications: NotificationCountApi[]) => {
-          setNotificationCount(notifications.filter(isVisibleNotification).length)
+        .then((data: NotificationCountResponse) => {
+          setNotificationCount(data.count)
         })
         .catch(() => {
           setNotificationCount(0)
@@ -160,6 +132,7 @@ export default function App() {
             <Route path="/signup" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/reset-password" element={<ChangePassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route
               path="/notifications"

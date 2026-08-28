@@ -27,6 +27,7 @@ type SeatsNavbarProps = {
 const legendItems = [
   { icon: singleSeatAvailable, alt: 'single seat available', label: 'Disponibil (loc individual)' },
   { icon: occupied, alt: 'occupied', label: 'Ocupat' },
+  { swatchClassName: 'border-[#F59E0B] bg-[#FDE68A]', label: 'Pending' },
   { icon: selected, alt: 'selected', label: 'Selectat' },
   { icon: indisponibil, alt: 'indisponibil', label: 'Indisponibil' },
   { icon: roomAvailable, alt: 'room available', label: 'Disponibil (doar daca se rezerva toata sala)' },
@@ -36,7 +37,11 @@ const LegendContent = () => (
   <>
     {legendItems.map((item) => (
       <div key={item.label} className="flex items-center gap-3 text-sm font-semibold text-[#1E1B4B]">
-        <img src={item.icon} alt={item.alt} className="h-6 w-6 shrink-0" />
+        {'icon' in item ? (
+          <img src={item.icon} alt={item.alt} className="h-6 w-6 shrink-0" />
+        ) : (
+          <span className={`h-6 w-6 shrink-0 rounded-sm border ${item.swatchClassName}`} />
+        )}
         <p className="min-w-0 leading-snug">{item.label}</p>
       </div>
     ))}

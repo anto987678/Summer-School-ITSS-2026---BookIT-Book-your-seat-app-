@@ -21,6 +21,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -293,7 +294,7 @@ public class ReservationService {
     }
 
     public List<Reservation> historyReservation(Integer userId) {
-        return reservationRepository.findByUser_Id(userId);
+        return reservationRepository.findByUser_IdOrderByStartDateTimeAsc(userId);
     }
 
     
@@ -359,17 +360,27 @@ public class ReservationService {
             return;
         }
 
+        if (isEventRoomReservation(savedReservation)) {
+            return;
+        }
+
         LocalDateTime startOfDay = savedReservation.getStartDateTime().toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = savedReservation.getStartDateTime().toLocalDate().atTime(LocalTime.MAX);
 
         List<Reservation> departmentReservations = reservationRepository.findByUserDepartmentIdAndStartDateTimeBetween(
                 currentUser.getDepartmentId(), startOfDay, endOfDay);
 
-        long activeDepartmentReservations = departmentReservations.stream()
+        long activeDepartmentUsers = departmentReservations.stream()
                 .filter(reservation -> BLOCKING_STATUSES.contains(reservation.getStatus()))
+                .filter(reservation -> !isEventRoomReservation(reservation))
+                .map(Reservation::getUser)
+                .filter(Objects::nonNull)
+                .map(PostgresUser::getId)
+                .filter(Objects::nonNull)
+                .distinct()
                 .count();
 
-        if (activeDepartmentReservations < 2) {
+        if (activeDepartmentUsers < 2) {
             return;
         }
 
@@ -389,6 +400,19 @@ public class ReservationService {
         }
     }
 
+    private boolean isEventRoomReservation(Reservation reservation) {
+        Room room = getReservationRoom(reservation);
+        return room != null && "EVENT_ROOM".equals(room.getType());
+    }
+
+    private Room getReservationRoom(Reservation reservation) {
+        if (reservation.getRoom() != null) {
+            return reservation.getRoom();
+        }
+
+        Seat seat = reservation.getSeat();
+        return seat == null ? null : seat.getRoom();
+    }
     private List<PostgresUser> findReservationApprovers() {
         List<PostgresUser> managers = postgresUserRepository.findByRole("MANAGER");
         if (!managers.isEmpty()) {

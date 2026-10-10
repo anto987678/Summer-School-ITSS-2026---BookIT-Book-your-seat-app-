@@ -3,6 +3,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useState, useEffect } from 'react';
 import { getBookingStatusClassName } from '@/lib/bookingStatus';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type BookingStats = { confirmed: number; pending: number; canceled: number };
 type BookingHistoryItem = { id: number; date: string; seat: string; room: string; status: string };
@@ -12,6 +13,7 @@ type BookingSummaryResponse = {
   bookingStats: BookingStats;
   bookingHistory: Array<Omit<BookingHistoryItem, 'date'> & { date: string }>;
 };
+type UserDetailsLocationState = { editMode?: boolean };
 
 const specialCharacterRegex = /[!@#$%&*]/g;
 
@@ -74,10 +76,14 @@ const getBookingPreferences = (items: BookingSummaryResponse['bookingHistory']):
 };
 
 const UserDetails = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const locationState = location.state as UserDetailsLocationState | null;
+  const routeEditMode = locationState?.editMode;
   const { user: currentUser, isLoading } = useCurrentUser();
 
   // --- STATE-URI PENTRU MODUL DE EDITARE ---
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(routeEditMode === true);
   const [editPhone, setEditPhone] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null); // Stocare temporară pentru telefon
   const [newPassword, setNewPassword] = useState("");
@@ -94,6 +100,19 @@ const UserDetails = () => {
     preferredTime: 'Se incarca...',
   });
   const [passwordSuccess, setPasswordSuccess] = useState(""); // Mesajul de succes pentru parolă
+
+  useEffect(() => {
+    if (routeEditMode === true) {
+      setIsEditing(true);
+      return;
+    }
+
+    if (routeEditMode === false) {
+      setIsEditing(false);
+      setErrors({ phone: '', password: '' });
+      setPasswordSuccess("");
+    }
+  }, [routeEditMode]);
 
   // Sincronizează numărul de telefon curent când datele utilizatorului sunt încărcate
   useEffect(() => {
@@ -155,7 +174,17 @@ const UserDetails = () => {
     { label: 'Parolele coincid', isValid: passwordsMatch },
   ];
   const isPasswordValid = passwordRules.every((rule) => rule.isValid);
+  const openEditMode = () => {
+    setIsEditing(true);
+    setEditPhone(savedPhone !== null ? savedPhone : (currentUser?.phoneNumber || ""));
+  };
 
+  const closeEditMode = () => {
+    setIsEditing(false);
+    setErrors({ phone: '', password: '' });
+    setPasswordSuccess("");
+    navigate(location.pathname, { replace: true, state: null });
+  };
   // --- HANDLERS (LOGICA DE SALVARE) ---
   const handleSaveProfile = async () => {
     if (!editPhone || editPhone.trim() === "") {
@@ -180,9 +209,7 @@ const UserDetails = () => {
 
       const updatedUser = await response.json() as { phoneNumber?: string };
       setSavedPhone(updatedUser.phoneNumber ?? normalizedEditPhone);
-      setIsEditing(false);
-      setPasswordSuccess("");
-      setErrors({ phone: '', password: '' });
+      closeEditMode();
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
@@ -230,7 +257,7 @@ const UserDetails = () => {
   };
 
   return (
-    <div className="relative min-h-full bg-white p-4 sm:p-8">
+    <div className={`relative min-h-full p-4 sm:bg-white sm:p-8 ${isEditing ? "bg-[#F0EEFF] pb-28" : "bg-white"}`}>
       <div className="mx-auto max-w-6xl">
         <h1 className="mb-6 text-2xl font-bold text-[#29255E]">
           {isEditing ? 'Edit User Details' : 'User Details'}
@@ -260,11 +287,8 @@ const UserDetails = () => {
               <div className="shrink-0 self-end sm:self-center">
                 {!isEditing ? (
                   <button
-                    onClick={() => {
-                      setIsEditing(true);
-                      setEditPhone(savedPhone !== null ? savedPhone : (currentUser?.phoneNumber || "")); // Păstrează ce ai tastat ultima oară
-                    }}
-                    className="text-[#8B5CF6] hover:text-[#6D28D9] transition-colors p-2"
+                    onClick={openEditMode}
+                    className="hidden text-[#8B5CF6] transition-colors hover:text-[#6D28D9] sm:block sm:p-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -274,7 +298,7 @@ const UserDetails = () => {
                   <button
                     onClick={handleSaveProfile}
                     disabled={!isPhoneValid}
-                    className={`rounded-full px-8 py-2.5 text-sm font-bold text-white shadow-sm transition-colors ${isPhoneValid ? 'bg-[#8B5CF6] hover:bg-[#6D28D9]' : 'cursor-not-allowed bg-[#C4B5FD]'}`}
+                    className={`hidden rounded-full px-8 py-2.5 text-sm font-bold text-white shadow-sm transition-colors sm:inline-flex ${isPhoneValid ? 'bg-[#8B5CF6] hover:bg-[#6D28D9]' : 'cursor-not-allowed bg-[#C4B5FD]'}`}
                   >
                     Save
                   </button>
@@ -283,12 +307,12 @@ const UserDetails = () => {
             </div>
 
             {/* DATE DE CONTACT */}
-            <div className="rounded-3xl bg-[#F4F3FF] p-6 shadow-sm">
+            <div className="rounded-3xl bg-white p-6 shadow-sm sm:bg-[#F4F3FF]">
               <h3 className="mb-4 font-bold text-[#29255E]">Date de contact</h3>
               <div className="flex flex-col gap-3">
 
                 {/* EMAIL */}
-                <div className="flex items-center gap-4 rounded-xl bg-white p-3 border border-transparent">
+                <div className="flex items-center gap-4 rounded-xl bg-[#F4F3FF] p-3 border border-transparent sm:bg-white">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F3FF] text-[#8B5CF6]">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                   </span>
@@ -299,7 +323,7 @@ const UserDetails = () => {
                 </div>
 
                 {/* TELEFON */}
-                <div className={`flex items-center gap-4 rounded-xl p-3 border ${phoneError ? 'border-red-400 bg-red-50' : 'bg-white border-transparent'}`}>
+                <div className={`flex items-center gap-4 rounded-xl p-3 border ${phoneError ? 'border-red-400 bg-red-50' : 'bg-[#F4F3FF] border-transparent sm:bg-white'}`}>
                   <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${phoneError ? 'bg-red-100 text-red-500' : 'bg-[#F4F3FF] text-[#8B5CF6]'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                   </span>
@@ -325,7 +349,7 @@ const UserDetails = () => {
                 {phoneError && <span className="text-xs font-semibold text-red-500 pl-2">{phoneError}</span>}
 
                 {/* DEPARTAMENT */}
-                <div className="flex items-center gap-4 rounded-xl bg-white p-3 border border-transparent">
+                <div className="flex items-center gap-4 rounded-xl bg-[#F4F3FF] p-3 border border-transparent sm:bg-white">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F3FF] text-[#8B5CF6]">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                   </span>
@@ -340,12 +364,12 @@ const UserDetails = () => {
 
             {/* BLOC SCHIMBARE PAROLA SAU PREFERINTE */}
             {isEditing ? (
-              <div className="rounded-3xl bg-[#F4F3FF] p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="rounded-3xl bg-white p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 sm:bg-[#F4F3FF]">
                 <h3 className="mb-4 font-bold text-[#29255E]">Schimbare parolă</h3>
                 <div className="flex flex-col gap-3">
 
                   {/* Parola noua */}
-                  <div className={`flex items-center gap-4 rounded-xl p-3 border bg-white ${errors.password ? 'border-red-400' : 'border-gray-200'}`}>
+                  <div className={`flex items-center gap-4 rounded-xl border bg-[#F4F3FF] p-3 sm:bg-white ${errors.password ? 'border-red-400' : 'border-transparent sm:border-gray-200'}`}>
                     <span className="text-[#8B5CF6]">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                     </span>
@@ -373,7 +397,7 @@ const UserDetails = () => {
                   </div>
 
                   {/* Confirmare Parola */}
-                  <div className={`flex items-center gap-4 rounded-xl p-3 border ${errors.password ? 'border-red-400 bg-red-50' : 'bg-white border-gray-200'}`}>
+                  <div className={`flex items-center gap-4 rounded-xl border p-3 ${errors.password ? 'border-red-400 bg-red-50' : 'border-transparent bg-[#F4F3FF] sm:border-gray-200 sm:bg-white'}`}>
                     <span className="text-[#8B5CF6]">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                     </span>
@@ -408,7 +432,7 @@ const UserDetails = () => {
 
                   <button
                     onClick={handleSavePassword}
-                    className="mt-2 w-max rounded-full bg-[#8B5CF6] px-6 py-2 text-sm font-bold text-white hover:bg-[#6D28D9] transition-colors"
+                    className="mt-2 w-max rounded-full border border-[#8B5CF6] px-6 py-2 text-sm font-bold text-[#8B5CF6] transition-colors hover:bg-[#F5F3FF] sm:bg-[#8B5CF6] sm:text-white sm:hover:bg-[#6D28D9]"
                   >
                     Save new password
                   </button>
@@ -452,10 +476,10 @@ const UserDetails = () => {
           </div>
 
           {/* COLOANA DREAPTĂ - STATUS ȘI ISTORIC REZERVĂRI */}
-          <div className="flex flex-col gap-6 lg:col-span-7">
+          <div className={`${isEditing ? "hidden lg:flex" : "flex"} flex-col gap-6 lg:col-span-7`}>
 
             {/* Status rezervari */}
-            <div className="rounded-3xl bg-[#F4F3FF] p-6 shadow-sm">
+            <div className="rounded-3xl bg-white p-6 shadow-sm sm:bg-[#F4F3FF]">
               <h3 className="mb-4 font-bold text-[#29255E]">Status rezervari</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                 <div className="flex flex-col items-center justify-center rounded-xl bg-[#D1FAE5] py-4 text-center shadow-sm">
@@ -503,12 +527,30 @@ const UserDetails = () => {
           </div>
         </div>
       </div>
+        {isEditing && (
+          <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 px-4 py-4 shadow-[0_-12px_30px_rgba(17,24,39,0.12)] backdrop-blur sm:hidden">
+            <button
+              type="button"
+              onClick={handleSaveProfile}
+              disabled={!isPhoneValid}
+              className={`min-h-12 w-full rounded-full text-base font-bold text-white shadow-sm transition-colors ${isPhoneValid ? 'bg-[#8B5CF6] hover:bg-[#6D28D9]' : 'cursor-not-allowed bg-[#C4B5FD]'}`}
+            >
+              Save
+            </button>
+          </div>
+        )}
       <AIAssistant />
     </div>
   );
 };
 
 export default UserDetails;
+
+
+
+
+
+
 
 
 

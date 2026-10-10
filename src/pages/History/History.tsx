@@ -199,13 +199,13 @@ const History = () => {
 
   return (
     <div className="relative flex min-h-[calc(100vh-64px)] bg-white">
-      <div className="relative min-w-0 flex-1 p-4 sm:p-8">
-        <div className="mx-auto max-w-5xl">
+      <div className="relative min-w-0 flex-1 px-3 py-4 sm:p-8">
+        <div className="mx-auto w-full max-w-5xl">
           <BackButton className="mb-6" fallbackTo="/dashboard" />
 
           <BookingTabs activeTab={activeTab} onChange={setActiveTab} />
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5 sm:gap-6">
             {displayedBookings.length === 0 ? (
               <p className="mt-10 text-center text-gray-400">
                 Nu exista rezervari in aceasta categorie.
@@ -216,34 +216,34 @@ const History = () => {
                 const canModify = booking.tab === "Viitoare" && booking.status === "In asteptare";
 
                 return (
-                  <div key={booking.id}>
+                  <div key={booking.id} className="min-w-0">
                     <h4 className="mb-2 text-sm font-bold text-gray-700">{booking.title}</h4>
-                    <div className="grid gap-4 rounded-2xl bg-[#F8F8FC] p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_150px_360px] md:items-center">
-                      <div className="flex min-w-0 items-center gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EBE9FE]">
+                    <div className="grid min-w-0 gap-4 rounded-2xl bg-[#F8F8FC] p-4 shadow-sm sm:p-5 lg:grid-cols-[minmax(0,1fr)_140px_minmax(260px,360px)] lg:items-center">
+                      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EBE9FE] sm:h-12 sm:w-12">
                           <span className="text-xl">S</span>
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs text-gray-500">Data - Scaun - Sala</p>
-                          <p className="font-bold text-[#29255E]">
+                          <p className="break-words text-sm font-bold leading-snug text-[#29255E] sm:text-base">
                             {booking.date} - {booking.seat} - {booking.room}
                           </p>
-                          <p className="font-bold text-[#29255E]">{booking.time}</p>
+                          <p className="mt-1 text-sm font-bold text-[#29255E] sm:text-base">{booking.time}</p>
                         </div>
                       </div>
 
-                      <span className={`w-fit justify-self-start rounded-full px-3 py-1 text-xs font-bold md:justify-self-center ${getBookingStatusClassName(booking.status)}`}>
+                      <span className={`w-fit justify-self-center rounded-full px-3 py-1 text-xs font-bold ${getBookingStatusClassName(booking.status)}`}>
                         {booking.status}
                       </span>
 
-                      <div className="flex flex-wrap gap-3 md:justify-end">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
                         <button
                           type="button"
                           onClick={canCancel ? () => handleDeleteClick(booking.id) : undefined}
                           className={
                             canCancel
-                              ? "rounded-full border border-[#F87171] bg-[#FEE2E2] px-6 py-2 text-sm font-bold text-red-400 transition hover:bg-red-50"
-                              : "rounded-full border border-[#6B7280] px-6 py-2 text-sm font-bold text-[#6B7280] transition"
+                              ? "min-h-10 rounded-full border border-[#F87171] bg-[#FEE2E2] px-5 py-2 text-sm font-bold text-red-400 transition hover:bg-red-50"
+                              : "min-h-10 rounded-full border border-[#6B7280] px-5 py-2 text-sm font-bold text-[#6B7280] transition"
                           }
                         >
                           Anuleaza
@@ -253,8 +253,8 @@ const History = () => {
                           onClick={canModify ? () => handleModifyClick(booking) : undefined}
                           className={
                             canModify
-                              ? "rounded-full border border-[#6D28D9] px-6 py-2 text-sm font-bold text-[#6D28D9] transition hover:bg-purple-50"
-                              : "rounded-full border border-[#6B7280] px-6 py-2 text-sm font-bold text-[#6B7280] transition"
+                              ? "min-h-10 rounded-full border border-[#6D28D9] px-5 py-2 text-sm font-bold text-[#6D28D9] transition hover:bg-purple-50"
+                              : "min-h-10 rounded-full border border-[#6B7280] px-5 py-2 text-sm font-bold text-[#6B7280] transition"
                           }
                         >
                           Modifica
@@ -305,3 +305,8 @@ const History = () => {
 };
 
 export default History;
+
+
+
+
+

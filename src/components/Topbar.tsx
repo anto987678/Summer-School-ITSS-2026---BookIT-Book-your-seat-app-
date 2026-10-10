@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { ArrowLeft, Bell, ChevronRight, Menu, Search, X } from "lucide-react"
+import { ArrowLeft, Bell, ChevronRight, LogOut, Menu, PencilLine, Search, UserRound, X } from "lucide-react"
 import TextField from "@mui/material/TextField"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 
@@ -265,12 +265,12 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
                 role="dialog"
                 aria-modal="true"
                 aria-label="User account menu"
-                className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white px-4 pb-8 pt-3 shadow-2xl"
+                className="absolute inset-x-3 bottom-4 max-h-[88vh] overflow-y-auto rounded-[28px] bg-white px-7 pb-8 pt-5 shadow-2xl"
               >
-                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-200" />
+                <div className="mx-auto mb-7 h-1.5 w-16 rounded-full bg-gray-200" />
 
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="text-lg font-bold text-[#29255E]">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-[#111827]">
                     Contul meu
                   </h2>
 
@@ -278,23 +278,23 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
                     type="button"
                     onClick={() => setIsMobileUserMenuOpen(false)}
                     aria-label="Close user menu"
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-7 w-7" />
                   </button>
                 </div>
 
-                <div className="mt-3 flex items-center gap-4 rounded-2xl bg-[#F5F3FF] p-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6] text-lg font-bold text-white">
+                <div className="mt-8 flex items-center gap-5 rounded-[24px] bg-[#F5F3FF] p-5">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#7C3AED] text-2xl font-bold text-white">
                     {userInitial}
                   </div>
 
                   <div className="min-w-0">
-                    <h3 className="truncate font-bold text-[#29255E]">
+                    <h3 className="truncate text-xl font-bold text-[#111827]">
                       {displayName}
                     </h3>
 
-                    <p className="truncate text-sm text-gray-400">
+                    <p className="truncate text-base text-gray-500">
                       {displayEmail}
                     </p>
                   </div>
@@ -302,28 +302,34 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
 
                 <Link
                   to="/user-details"
+                  state={{ editMode: false }}
                   onClick={closeMobileMenus}
-                  className="mt-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-[#29255E] transition hover:bg-[#F5F3FF]"
+                  className="mt-6 flex min-h-20 items-center gap-4 rounded-[24px] bg-[#F9FAFB] px-5 text-[#1F2937] transition hover:bg-[#F5F3FF]"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5F3FF]">
-                    <img src={details} alt="" className="h-6 w-6" />
-                  </span>
+                  <UserRound className="h-7 w-7 shrink-0 text-gray-400" />
+                  <span className="text-xl font-semibold">User Details</span>
+                  <ChevronRight className="ml-auto h-6 w-6 text-gray-300" />
+                </Link>
 
-                  <span className="font-semibold">User Details</span>
-                  <ChevronRight className="ml-auto h-5 w-5 text-gray-400" />
+                <Link
+                  to="/user-details"
+                  state={{ editMode: true }}
+                  onClick={closeMobileMenus}
+                  className="mt-3 flex min-h-20 items-center gap-4 rounded-[24px] bg-[#F9FAFB] px-5 text-[#1F2937] transition hover:bg-[#F5F3FF]"
+                >
+                  <PencilLine className="h-7 w-7 shrink-0 text-gray-400" />
+                  <span className="text-xl font-semibold">Edit User Details</span>
+                  <ChevronRight className="ml-auto h-6 w-6 text-gray-300" />
                 </Link>
 
                 <Link
                   to="/"
                   onClick={closeMobileMenus}
-                  className="mt-3 flex items-center gap-3 rounded-2xl border border-red-300 bg-white p-4 text-red-500 transition hover:bg-red-50"
+                  className="mt-6 flex min-h-20 items-center gap-4 rounded-[24px] border border-red-100 bg-red-50 px-5 text-red-500 transition hover:bg-red-100"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50">
-                    <img src={logout} alt="" className="h-6 w-6" />
-                  </span>
-
-                  <span className="font-semibold">Log out</span>
-                  <ChevronRight className="ml-auto h-5 w-5" />
+                  <LogOut className="h-7 w-7 shrink-0" />
+                  <span className="text-xl font-semibold">Log out</span>
+                  <ChevronRight className="ml-auto h-6 w-6 text-red-300" />
                 </Link>
               </section>
             </div>
@@ -335,6 +341,13 @@ const Topbar = ({ notificationCount = 0, onOpenMobileMenu }: TopbarProps) => {
 }
 
 export default Topbar
+
+
+
+
+
+
+
 
 
 

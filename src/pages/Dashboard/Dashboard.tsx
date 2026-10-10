@@ -13,7 +13,7 @@ const Dashboard = () => {
     <div className="min-h-full bg-[#F5F3FF] p-4 sm:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#29255E] sm:text-2xl">
                 Good morning, {displayName}!
@@ -25,17 +25,17 @@ const Dashboard = () => {
             </div>
 
             {isHr && (
-              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[360px] lg:max-w-[420px]">
                 <Link 
                   to="/istoric"
-                  className="rounded-full bg-[#6D28D9] px-6 py-3 text-center font-semibold text-white transition-all hover:bg-[#5B21B6]"
+                  className="flex min-h-12 items-center justify-center rounded-full bg-[#6D28D9] px-5 py-3 text-center text-sm font-semibold leading-snug text-white transition-all hover:bg-[#5B21B6] sm:text-base"
                 >
                   Istoric angajati
                 </Link>
 
                 <Link 
                   to="/preferinte"
-                  className="rounded-full border-2 border-[#6D28D9] bg-white px-6 py-3 text-center font-semibold text-[#6D28D9] transition-all hover:bg-[#EDE9FE]"
+                  className="flex min-h-12 items-center justify-center rounded-full border-2 border-[#6D28D9] bg-white px-5 py-3 text-center text-sm font-semibold leading-snug text-[#6D28D9] transition-all hover:bg-[#EDE9FE] sm:text-base"
                 >
                   Preferinte
                 </Link>
@@ -58,3 +58,4 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+

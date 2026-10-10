@@ -229,7 +229,7 @@ const CityOverviewCard = () => {
       {/* Weather */}
       <section className="rounded-xl bg-[#F5F3FF] p-5">
         <h3 className="font-bold text-[#29255E]">
-          Weather - {weather.city}
+          Weather
         </h3>
 
         <p className="mt-1 text-xs text-gray-400">
@@ -277,7 +277,7 @@ const CityOverviewCard = () => {
       <section className="min-h-[280px] flex-1 rounded-xl bg-[#F5F3FF] p-5">
         <div className="flex items-center gap-4">
           <h3 className="font-bold text-[#29255E]">
-            Traffic - Bucharest
+            Traffic
           </h3>
 
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
